@@ -1,0 +1,101 @@
+[
+  {
+    "job_title": "Senior Backend Developer",
+    "location": "Ho Chi Minh",
+    "experience_year": 2,
+    "must_have": "- 2+ years of experience in backend service or system development.\n- Proficient in Golang, SQL/NoSQL optimization, Linux, and Docker.\n- Familiar with cloud platforms such as AWS, Google Cloud, or Digital Ocean.\n- Hands-on experience with monitoring tools for system performance.\n- Strong self-learning ability and a passion for researching new technologies.\n- Strong problem-solving skills and teamwork.",
+    "nice_to_have": "- Experience in blockchain and Web3 application development is a big plus.",
+    "language_skills": "- Good reading and writing skills in English.",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Maintain and develop backend services/systems.\n- Optimize index structures and queries for large-scale datasets.\n- Optimize SQL/NoSQL databases.\n- Implement monitoring tools and maintain system performance.\n- Manage containers using Docker in Linux environments.",
+    "status": "approved"
+  },
+  {
+    "job_title": "UI/UX Designer",
+    "location": "Ho Chi Minh",
+    "experience_year": 2,
+    "must_have": "- 2+ years of experience in UI/UX design.\n- Proficiency in design tools such as Figma, Sketch, Adobe XD.\n- Conduct user research, analyze pain points, and implement feedback to refine UX workflows.\n- Strong attention to detail and graphic design skills.",
+    "nice_to_have": "- Experience with Web3, DeFi, or NFT space.\n- Experience in motion design or micro-interaction animation.",
+    "language_skills": "- Able to read and write in English effectively.",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Collaborate with product managers, developers, and senior designers to create seamless user experiences.\n- Design wireframes, mockups, interactive prototypes, and visual designs that meet user and business needs.\n- Verify with stakeholders and developers to ensure design aligns with product goals.\n- Conduct usability testing to validate designs and gather user feedback.\n- Maintain and update design systems and style guides.\n- Stay updated on the latest design trends, technologies, and best practices.",
+    "status": "approved"
+  },
+  {
+    "job_title": "Junior Frontend Developer",
+    "location": "Ho Chi Minh",
+    "experience_year": 1,
+    "must_have": "- Solid knowledge of React.js, JavaScript/TypeScript, HTML/CSS.\n- Understanding of how to use Next.js, especially SSR (Server Side Rendering) and SSG (Static Site Generation).\n- Experience working with Ant Design or TailwindCSS in projects.\n- Familiarity with managing state using React Hooks and Context API.\n- Experience integrating APIs (RESTful or GraphQL), handling asynchronous data, and managing loading/error states.\n- Proficiency with Git and version control platforms such as GitHub or GitLab.",
+    "nice_to_have": "- Understanding of frontend performance optimization techniques (memoization, lazy loading, etc.).\n- Experience working with dynamic forms or large data tables (virtualized tables, custom input components).\n- Basic testing experience with tools like React Testing Library or similar.\n- Experience with CI/CD pipelines or deployment using Vercel/Netlify is a plus.",
+    "language_skills": "- Able to read and understand technical English documentation.",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Develop and optimize frontend components using React.js and Next.js 14.\n- Work with UI frameworks such as Ant Design and TailwindCSS to build dynamic data tables and input forms.\n- Integrate data from backend APIs (RESTful/GraphQL), and process conditional rendering.\n- Optimize performance (prevent input focus loss, minimize unnecessary re-renders).\n- Collaborate with backend developers and UI/UX designers to deliver a smooth user experience.\n- Contribute ideas to improve UI/UX and development workflow.",
+    "status": "approved"
+  },
+  {
+    "job_title": "Senior PHP Developer (Laravel + VueJS)",
+    "location": "Ha Noi",
+    "experience_year": 5,
+    "must_have": "- Graduated from a college or university with a degree in Information Technology or Computer Science.\n- 5+ years of software development experience, with a focus on web applications technologies, work experience in Laravel PHP framework.\n- 2+ years experience in working with FE and JS framework (strongly preferred with VueJS).\n- Proficient in software engineering best practices throughout the development life cycle (coding standards, code reviews, version control, build processes, testing, operations, monitoring, etc.).\n- Strong at SOLID principles, design patterns, and optimizing website performance.\n- Strong teamwork, problem-solving, and good time management skills.\n- Highly motivated, a \"Can do attitude\" and a product mindset.\n- Can work effectively under high pressure.",
+    "nice_to_have": "- Knowledge of CI/CD methodologies are preferable.\n- Knowledge of Cloud services such as GCP, AWS are preferable.\n- Experienced with Apache or Nginx Web Server and Docker configuration.",
+    "language_skills": "- Communicate basically in English (writing, reading)",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Analyze system requirements, and develop web applications.\n- Ensure code quality, adhere to SOLID principles, apply design patterns, and optimize database performance.\n- Coordinate with the Project Manager and Bridge SE to resolve issues.\n- Coordinate with team members to resolve technical issues.\n- Research and develop new technology related to the project.\n- Mentor team members by sharing expertise, conducting code reviews, aligning strictly with coding standards, and suggesting best practices.\n- Help the team to detect and solve an issue as operating the whole system or in daily workflow.\n- Write technical documentation.",
+    "status": "closed"
+  },
+  {
+    "job_title": "Fresher IT Comtor/Tester (JLPT-N2)",
+    "location": "Da Nang",
+    "experience_year": "1",
+    "must_have": "- Your career path is targeted to be an advanced IT human resource such as BrSE, PM and Tester in the future.\n- You have a strong desire to learn Japanese, project management, technical knowledge, manage product quality, etc.\n- Good at writing, reading in Japanese (Equivalent to N2 or upper).\n- Good communication skills & be careful to work in detail.\n- Eager to learn technical skills and “can-do” attitude in a technology environment.\n- Proactive and high sense of responsibility, willing to cooperate with team members and be a good team player to achieve the goal.\n- Basic English in reading & writing is definitely a plus.\n- Job opportunities for freshers/interns who graduated/will graduate from the university with Japanese as the main subject. Those who have basic IT knowledge are a priority.",
+    "nice_to_have": "- Basic IT knowledge",
+    "language_skills": "- Japanese: Equivalent to JLPT N2 or upper\n- Basic English in reading & writing",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Communicate and discuss directly with the development team to clarify requirements.\n- Cooperate with the project leader to solve issues of progress/quality and suggest new test methods to improve project productivity.",
+    "status": "closed"
+  },
+  {
+    "job_title": "Senior Manual Tester (N3 JLPT)",
+    "location": "Da Nang",
+    "experience_year": 3,
+    "must_have": "- At least 3 years of experience as an IT tester\n- Good technical knowledge in web development methodologies, design and implementation\n- Experience in documenting test cases, bugs and associated reporting\n- Good understanding of the entire development process, including specification, documentation and quality assurance\n- Ability to manage multiple assigned tasks, with great attention to detail\n- Highly motivated and can work independently\n- Hands-on experience in usability, browser compatibility, integration, regression, security, performance/load/stress test\n- Practical experience in mobile testing and database testing (Postgresql, MySql,..)",
+    "nice_to_have": "- Experience with search engines (e.g.: Solr, Elastic search)\n- Familiarity with a cloud service (AWS, GCP) and a testing in these environments\n- Good to have knowledge of creating and executing automation tests",
+    "language_skills": "- Basic proficiency in English (reading, writing, communication)\n- Japanese around N3 JLPT",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Communicate and discuss directly with the development team to clarify requirements.\n- Create test plans, execute test cases, and make test summary reports.\n- Analyze test results, test metrics and make project quality reports.\n- Manage progress, test execution result, bugs.\n- Define the quality of the tests in each project and give improvement solutions.\n- Join & instruct team members in defining test solutions, creating test design, test specification.\n- Cooperate with the project leader to make testing schedule/plan/strategy correspond with the development schedule & company process.\n- Cooperate with the project leader to solve issues of progress/quality and suggest new test methods to improve project productivity.",
+    "status": "approved"
+  },
+  {
+    "job_title": "BrSE Japanese (Bridge System Engineer)",
+    "location": "Da Nang",
+    "experience_year": 2,
+    "must_have": "- Highly motivated to learn and grow\n- Open-minded and willing to explore new methods\n- Client-oriented mindset with empathy for the user’s perspective\n- Strong sense of teamwork and collaboration\n- Japanese language proficiency: N2 or higher (speaking, reading, writing)\n- Basic understanding of front-end or back-end development\n- Project management skills (planning, execution, coordination)\n- Strong schedule and progress management skills\n- Analytical skills for both business and system requirements\n- Basic knowledge of software development processes\n- Ability to analyze system and business requirements\n- Lived in Japan for over 1 year\n- Minimum 2 years of working experience as a BrSE or IT Communicator",
+    "nice_to_have": "- Studied at a Japanese university (including exchange programs) or worked at a Japanese company\n- Hands-on coding skills in front-end or back-end development\n- Experience in team building or training junior staff",
+    "language_skills": "- Japanese language proficiency: N2 or higher (speaking, reading, writing)",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Collaborate directly with the Japanese team and bridge communication with the Vietnamese development team\n- Conduct requirement hearings, documentation, and clarification based on client needs\n- Communicate requirements clearly to the dev team and handle development-related Q&A\n- Support Japanese PMs in project progress tracking, problem-solving, and coordination\n- Create and execute test cases to validate deliverables\n- Facilitate effective meetings between Japan and Vietnam teams\n- Provide regular updates and improvement suggestions to clients\n- Participate in internal training and staff development activities as directed by supervisors",
+    "status": "approved"
+  },
+  {
+    "job_title": "Java Developer",
+    "location": "Ha Noi",
+    "experience_year": 3,
+    "must_have": "- Experience with frameworks such as Spring Boot, Spring Data JPA, Micronaut, Hibernate for 3+ years.\n- Experience working with Cloud services such as AWS, Azure, GCP.\n- Proficient in Git with good conflict resolution skills.\n- Strong SQL skills with experience working with databases like Oracle, MySQL, PostgreSQL, MariaDB.\n- Knowledge of Microservices, Docker, Kubernetes is a plus.",
+    "nice_to_have": "- Experience with tools such as Kafka, RabbitMQ.\n- Experience working in Agile/Scrum environments.\n- Familiarity with CI/CD tools and DevOps processes.",
+    "language_skills": "- Able to read and understand technical English documentation.",
+    "our_offer": "- Attractive salary based on your skills.\n- 100% salary during the 2-month probation period.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/ Laptop provided to meet your work requirements.\n- Language support programs for learning Japanese and English.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+    "key_responsibility": "- Participate in all stages of software development: requirements gathering, analysis, design, and development.\n- Provide technical solutions and research new technologies to apply to the project.\n- Collaborate with the team under the project manager's task delegation.",
+    "status": "approved"
+  },
+  {
+  "job_title": "Senior AI Backend Engineer",
+  "location": "Ho Chi Minh",
+  "experience_year": 3,
+  "must_have": "- At least 3 years of experience in backend development, with at least 2 years working on AI-related tasks.\n- Familiarity with AI/ML frameworks such as TensorFlow, PyTorch, and training workflows.\n- Familiar with current LLM technologies and tools such as LangChain, LLamaIndex, and vector databases.\n- Proficient in backend technologies using Python and Golang.\n- Experience with database management and design (SQL and NoSQL, e.g., MongoDB, PostgreSQL).\n- Familiar with containerization and orchestration tools like Docker, Kubernetes.",
+  "nice_to_have": "- Experience with microservices architecture and message brokers like Kafka, RabbitMQ.\n- Experience with cloud platforms such as AWS, Google Cloud, Azure.",
+  "language_skills": "- Able to read and understand technical English documentation.",
+  "our_offer": "- Attractive salary based on skills.\n- 13th-month salary and performance-based bonuses.\n- 15-18 days of paid leave per year for employees with over 1 year of service.\n- MacBook/Laptop provided for work.\n- Performance appraisal and salary review twice a year.\n- Full gross salary payment for compulsory insurance.\n- Awards for outstanding performance on a quarterly and yearly basis.",
+  "key_responsibility": "- Design, develop, and maintain scalable backend services and APIs supporting AI model inference, fine-tuning, and training as a service.\n- Collaborate closely with frontend developers, data analysts, and AI engineers to integrate backend systems with AI models and frontend interfaces.\n- Optimize backend services for distributed computing environments to handle large-scale AI workloads.\n- Ensure the security, scalability, and performance of backend services.\n- Implement automated monitoring, logging, and alerting mechanisms for backend services.\n- Troubleshoot, debug, and optimize backend performance to handle high-traffic workloads.",
+  "status": "approved"
+  }
+]
