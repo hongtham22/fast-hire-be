@@ -10,6 +10,7 @@ import {
 import { User } from '../users/user.entity';
 import { Application } from '../applications/application.entity';
 import { JDKeyword } from '../jd_keywords/jd-keyword.entity';
+import { Location } from '../locations/location.entity';
 
 export enum JobStatus {
   PENDING = 'pending',
@@ -25,8 +26,8 @@ export class Job {
   @Column({ name: 'job_title' })
   jobTitle: string;
 
-  @Column()
-  location: string;
+  @Column({ name: 'location_id', nullable: true })
+  locationId: string;
 
   @Column({ name: 'experience_year' })
   experienceYear: number;
@@ -65,6 +66,10 @@ export class Job {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   creator: User;
+
+  @ManyToOne(() => Location)
+  @JoinColumn({ name: 'location_id' })
+  location: Location;
 
   @OneToMany(() => Application, (application) => application.job)
   applications: Application[];

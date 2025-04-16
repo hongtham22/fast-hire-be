@@ -9,6 +9,7 @@ import { Category } from './cv_keywords/category.entity';
 import { CVKeywordCategory } from './cv_keywords/cv-keyword-category.entity';
 import { JDCategory } from './jd_keywords/jd-category.entity';
 import { JDKeywordCategory } from './jd_keywords/jd-keyword-category.entity';
+import { Location } from './locations/location.entity';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -31,6 +32,7 @@ export const AppDataSource = new DataSource({
     CVKeywordCategory,
     JDCategory,
     JDKeywordCategory,
+    Location,
   ],
   migrations: ['src/migrations/*.ts'],
   migrationsTableName: 'migrations',
