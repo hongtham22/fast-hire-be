@@ -24,6 +24,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["src/**/*", "test/**/*", "webpack-hmr.config.js"],
   "exclude": ["node_modules", "dist"]
 }

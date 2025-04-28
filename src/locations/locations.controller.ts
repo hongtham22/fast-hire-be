@@ -15,13 +15,15 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/enums/role.enum';
-
+import { Public } from '../auth/decorators/public.decorator';
 @Controller('locations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @Public()
+// @UseGuards(JwtAuthGuard, RolesGuard)
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 
   @Get()
+  @Public()
   findAll() {
     return this.locationsService.findAll();
   }
