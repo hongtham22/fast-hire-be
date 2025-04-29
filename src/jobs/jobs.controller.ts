@@ -6,9 +6,15 @@ import {
   ParseUUIDPipe,
   Param,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+// import { UserRole } from '../users/user-role.enum';
+import { JobStatus } from './job.entity';
 
 @Controller('jobs')
 export class JobsController {
@@ -33,6 +39,25 @@ export class JobsController {
       page,
       limit,
       locationId,
+      query,
+    });
+  }
+
+  @Get('hr/all')
+  @Public() // Mark this endpoint as public
+
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(UserRole.HR, UserRole.ADMIN)
+  async findAllJobsForHR(
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('status') status?: JobStatus,
+    @Query('query') query?: string,
+  ) {
+    return this.jobsService.findAllJobsForHR({
+      page,
+      limit,
+      status,
       query,
     });
   }

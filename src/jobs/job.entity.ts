@@ -76,4 +76,7 @@ export class Job {
 
   @OneToOne(() => JDKeyword, (jdKeyword) => jdKeyword.job)
   jdKeyword: JDKeyword;
+
+  // Virtual property (not stored in database)
+  applicationCount?: number;
 }

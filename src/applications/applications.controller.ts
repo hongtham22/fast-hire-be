@@ -71,6 +71,7 @@ export class ApplicationsController {
   }
 
   @Get('by-job/:jobId')
+  @Public()
   async findByJobId(
     @Param('jobId', ParseUUIDPipe) jobId: string,
   ): Promise<Application[]> {
