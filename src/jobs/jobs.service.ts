@@ -167,6 +167,31 @@ export class JobsService {
   }
 
   /**
+   * Lấy thông tin JD keywords của một job
+   * @param jobId - ID của job cần lấy keywords
+   * @returns Thông tin JD keyword của job
+   */
+  async getJDKeywords(jobId: string) {
+    const jdKeyword = await this.jdKeywordRepository.findOne({
+      where: { jobId },
+      relations: ['categories', 'categories.category'],
+    });
+
+    if (!jdKeyword) {
+      return null;
+    }
+
+    // Restructure data to match the expected format in the frontend
+    const result = {};
+
+    for (const category of jdKeyword.categories) {
+      result[category.category.name] = category.value;
+    }
+
+    return result;
+  }
+
+  /**
    * Trích xuất và lưu trữ thông tin keyword từ job description
    * @param jobId - ID của job cần trích xuất keyword
    * @returns Thông tin JD keyword đã được lưu trữ

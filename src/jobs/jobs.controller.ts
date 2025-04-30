@@ -74,6 +74,16 @@ export class JobsController {
     return job;
   }
 
+  @Get(':id/keywords')
+  @Public()
+  async getJobKeywords(@Param('id', ParseUUIDPipe) id: string) {
+    const keywords = await this.jobsService.getJDKeywords(id);
+    if (!keywords) {
+      throw new NotFoundException(`Keywords for job ID ${id} not found`);
+    }
+    return keywords;
+  }
+
   @Post(':id/extract-keywords')
   @Public() // For testing purposes, consider adding proper auth guards
   async extractJobKeywords(@Param('id', ParseUUIDPipe) id: string) {

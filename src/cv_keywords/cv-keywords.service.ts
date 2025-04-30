@@ -136,10 +136,29 @@ export class CVKeywordsService {
    * Find CV keywords by application ID
    * @param applicationId The ID of the application
    */
-  async findByApplicationId(applicationId: string): Promise<CVKeyword> {
-    return this.cvKeywordRepository.findOne({
-      where: { applicationId },
-      relations: ['categories', 'categories.category'],
-    });
+  async findByApplicationId(applicationId: string): Promise<CVKeyword | null> {
+    try {
+      const result = await this.cvKeywordRepository.findOne({
+        where: { applicationId },
+        relations: ['categories', 'categories.category'],
+      });
+
+      if (!result) {
+        console.warn(
+          `No CV keywords found for application ID: ${applicationId}`,
+        );
+      }
+
+      return result;
+    } catch (error) {
+      console.error(
+        `Error finding CV keywords for application ID ${applicationId}:`,
+        error,
+      );
+      throw new HttpException(
+        `Failed to retrieve CV keywords: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

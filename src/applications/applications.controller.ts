@@ -66,6 +66,7 @@ export class ApplicationsController {
   }
 
   @Get(':id')
+  @Public()
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Application> {
     return this.applicationsService.findOne(id);
   }
