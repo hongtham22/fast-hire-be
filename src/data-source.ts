@@ -5,7 +5,7 @@ import { Applicant } from './applicants/applicant.entity';
 import { Application } from './applications/application.entity';
 import { CVKeyword } from './cv_keywords/cv-keyword.entity';
 import { JDKeyword } from './jd_keywords/jd-keyword.entity';
-import { Category } from './cv_keywords/category.entity';
+import { Category } from './cv_keywords/cv-category.entity';
 import { CVKeywordCategory } from './cv_keywords/cv-keyword-category.entity';
 import { JDCategory } from './jd_keywords/jd-category.entity';
 import { JDKeywordCategory } from './jd_keywords/jd-keyword-category.entity';

@@ -8,11 +8,13 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ApplicantsModule } from '../applicants/applicants.module';
+import { CVKeywordsModule } from '../cv_keywords/cv-keywords.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Application]),
     ApplicantsModule,
+    CVKeywordsModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/cvs',

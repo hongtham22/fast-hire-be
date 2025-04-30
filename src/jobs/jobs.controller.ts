@@ -7,6 +7,7 @@ import {
   Param,
   NotFoundException,
   UseGuards,
+  Post,
 } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -15,6 +16,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 // import { UserRole } from '../users/user-role.enum';
 import { JobStatus } from './job.entity';
+import axios from 'axios';
 
 @Controller('jobs')
 export class JobsController {
@@ -70,5 +72,17 @@ export class JobsController {
       throw new NotFoundException(`Job with ID ${id} not found`);
     }
     return job;
+  }
+
+  @Post(':id/extract-keywords')
+  @Public() // For testing purposes, consider adding proper auth guards
+  async extractJobKeywords(@Param('id', ParseUUIDPipe) id: string) {
+    return this.jobsService.extractAndStoreJDKeywords(id);
+  }
+
+  @Post('process-all-keywords')
+  @Public() // For testing purposes, consider adding proper auth guards
+  async processAllJobKeywords() {
+    return this.jobsService.processAllJobsForKeywords();
   }
 }

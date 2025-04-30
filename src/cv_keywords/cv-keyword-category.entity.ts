@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { CVKeyword } from './cv-keyword.entity';
-import { Category } from './category.entity';
+import { Category } from './cv-category.entity';
 
 @Entity('cv_keyword_category')
 export class CVKeywordCategory {

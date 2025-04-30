@@ -18,15 +18,20 @@ import { Application } from './applications/application.entity';
 import { Applicant } from './applicants/applicant.entity';
 import { JDKeyword } from './jd_keywords/jd-keyword.entity';
 import { CVKeyword } from './cv_keywords/cv-keyword.entity';
-import { Category } from './cv_keywords/category.entity';
+import { Category } from './cv_keywords/cv-category.entity';
 import { CVKeywordCategory } from './cv_keywords/cv-keyword-category.entity';
 import { JDCategory } from './jd_keywords/jd-category.entity';
 import { JDKeywordCategory } from './jd_keywords/jd-keyword-category.entity';
 import { ApplicationsModule } from './applications/applications.module';
 import { ApplicantsModule } from './applicants/applicants.module';
+import { CVKeywordsModule } from './cv_keywords/cv-keywords.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.PG_HOST,
@@ -57,6 +62,7 @@ import { ApplicantsModule } from './applicants/applicants.module';
     JobsModule,
     ApplicationsModule,
     ApplicantsModule,
+    CVKeywordsModule,
   ],
   controllers: [AppController, UploadsController],
   providers: [
