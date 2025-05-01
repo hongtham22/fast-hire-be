@@ -90,4 +90,11 @@ export class ApplicantsService {
     await this.applicantRepository.update(id, updateData);
     return this.findOne(id);
   }
+
+  /**
+   * Delete all applicants
+   */
+  async deleteAll(): Promise<void> {
+    await this.applicantRepository.delete({});
+  }
 }

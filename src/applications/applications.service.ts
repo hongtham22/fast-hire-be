@@ -116,4 +116,25 @@ export class ApplicationsService {
       relations: ['job', 'cvKeyword'],
     });
   }
+
+  /**
+   * Delete all applications and related data
+   *
+   * This method uses application entity's cascade delete settings to
+   * automatically delete related records (keywords and category relations)
+   *
+   * @param deleteApplicants If true, all applicants will also be deleted
+   */
+  async deleteAll(deleteApplicants = false): Promise<void> {
+    // Delete all applications
+    // Due to cascade relationships set in the entities, this will also:
+    // - Delete all cv_keywords related to applications
+    // - Delete all cv_keyword_category records related to the cv_keywords
+    await this.applicationRepository.delete({});
+
+    // Optionally delete all applicants
+    if (deleteApplicants) {
+      await this.applicantsService.deleteAll();
+    }
+  }
 }

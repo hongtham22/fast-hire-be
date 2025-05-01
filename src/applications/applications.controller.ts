@@ -8,6 +8,10 @@ import {
   UploadedFile,
   ParseUUIDPipe,
   BadRequestException,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApplicationsService } from './applications.service';
@@ -84,5 +88,18 @@ export class ApplicationsController {
     @Param('applicantId', ParseUUIDPipe) applicantId: string,
   ): Promise<Application[]> {
     return this.applicationsService.findByApplicantId(applicantId);
+  }
+
+  /**
+   * Delete all application records and related data
+   * @param deleteApplicants Optional query param to delete applicants as well
+   */
+  @Delete('delete-all')
+  @Public()
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAll(
+    @Query('deleteApplicants') deleteApplicants?: boolean,
+  ): Promise<void> {
+    return this.applicationsService.deleteAll(deleteApplicants);
   }
 }
