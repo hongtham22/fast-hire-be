@@ -65,18 +65,23 @@ export class ApplicationsService {
     const savedApplication =
       await this.applicationRepository.save(newApplication);
 
-    // 4. Process CV to extract keywords
+    // 4. Process CV to extract keywords and perform JD matching
     try {
       console.log(
-        `Application submission: Processing CV to extract keywords for application ${savedApplication.id}`,
+        `Application submission: Processing CV to extract keywords and perform JD matching for application ${savedApplication.id}`,
       );
-      await this.cvKeywordsService.processCV(savedApplication.id, cvFilePath);
+      // Pass the jobId to enable JD matching
+      await this.cvKeywordsService.processCV(
+        savedApplication.id,
+        cvFilePath,
+        jobId, // Pass jobId to enable JD matching
+      );
       console.log(
-        `Application submission: CV keywords extraction completed for application ${savedApplication.id}`,
+        `Application submission: CV keywords extraction and matching completed for application ${savedApplication.id}`,
       );
     } catch (error) {
       console.error(
-        `Application submission: Failed to extract CV keywords: ${error.message}`,
+        `Application submission: Failed to extract CV keywords or perform matching: ${error.message}`,
       );
       // Don't fail the application submission if keyword extraction fails
     }

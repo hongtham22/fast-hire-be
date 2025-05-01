@@ -8,7 +8,7 @@ import {
 import { CVKeywordCategory } from './cv-keyword-category.entity';
 
 @Entity('cv_categories')
-export class Category {
+export class CVCategory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

@@ -18,13 +18,14 @@ import { Application } from './applications/application.entity';
 import { Applicant } from './applicants/applicant.entity';
 import { JDKeyword } from './jd_keywords/jd-keyword.entity';
 import { CVKeyword } from './cv_keywords/cv-keyword.entity';
-import { Category } from './cv_keywords/cv-category.entity';
+import { CVCategory } from './cv_keywords/cv-category.entity';
 import { CVKeywordCategory } from './cv_keywords/cv-keyword-category.entity';
 import { JDCategory } from './jd_keywords/jd-category.entity';
 import { JDKeywordCategory } from './jd_keywords/jd-keyword-category.entity';
 import { ApplicationsModule } from './applications/applications.module';
 import { ApplicantsModule } from './applicants/applicants.module';
 import { CVKeywordsModule } from './cv_keywords/cv-keywords.module';
+import { JdKeywordsModule } from './jd_keywords/jd-keywords.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -49,7 +50,7 @@ import { ConfigModule } from '@nestjs/config';
         Applicant,
         JDKeyword,
         CVKeyword,
-        Category,
+        CVCategory,
         CVKeywordCategory,
         JDCategory,
         JDKeywordCategory,
@@ -63,6 +64,7 @@ import { ConfigModule } from '@nestjs/config';
     ApplicationsModule,
     ApplicantsModule,
     CVKeywordsModule,
+    JdKeywordsModule,
   ],
   controllers: [AppController, UploadsController],
   providers: [

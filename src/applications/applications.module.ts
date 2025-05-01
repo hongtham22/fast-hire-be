@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Application } from './application.entity';
 import { ApplicationsController } from './applications.controller';
@@ -14,7 +14,7 @@ import { CVKeywordsModule } from '../cv_keywords/cv-keywords.module';
   imports: [
     TypeOrmModule.forFeature([Application]),
     ApplicantsModule,
-    CVKeywordsModule,
+    forwardRef(() => CVKeywordsModule),
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/cvs',

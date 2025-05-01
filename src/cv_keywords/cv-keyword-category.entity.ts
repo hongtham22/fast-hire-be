@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { CVKeyword } from './cv-keyword.entity';
-import { Category } from './cv-category.entity';
+import { CVCategory } from './cv-category.entity';
 
 @Entity('cv_keyword_category')
 export class CVKeywordCategory {
@@ -32,9 +32,9 @@ export class CVKeywordCategory {
   @JoinColumn({ name: 'cv_keyword_id' })
   cvKeyword: CVKeyword;
 
-  @ManyToOne(() => Category, (category) => category.cvKeywordCategories, {
+  @ManyToOne(() => CVCategory, (category) => category.cvKeywordCategories, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'category_id' })
-  category: Category;
+  category: CVCategory;
 }

@@ -154,16 +154,29 @@ export class JobsService {
   }
 
   async findOne(id: string): Promise<Job | null> {
-    const job = await this.jobRepository.findOne({
-      where: { id },
-      relations: ['location', 'creator', 'applications'],
-    });
+    try {
+      const job = await this.jobRepository.findOne({
+        where: { id },
+        relations: [
+          'location',
+          'creator',
+          'applications',
+          'applications.applicant',
+        ],
+      });
 
-    if (job && job.applications) {
-      (job as any).applicationCount = job.applications.length;
+      if (job && job.applications) {
+        (job as any).applicationCount = job.applications.length;
+      }
+
+      return job;
+    } catch (error) {
+      console.error(`Error fetching job with ID ${id}:`, error);
+      throw new HttpException(
+        `Failed to fetch job: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    return job;
   }
 
   /**
