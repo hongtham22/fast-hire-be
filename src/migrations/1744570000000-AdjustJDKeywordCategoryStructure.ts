@@ -27,7 +27,7 @@ export class AdjustJDKeywordCategoryStructure1744570000000
       ('experience_years'),
       ('key_responsibilities'),
       ('language'),
-      ('programing_langugue'),
+      ('programming_language'),
       ('role_job'),
       ('soft_skill'),
       ('technical_skill')

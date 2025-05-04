@@ -220,6 +220,15 @@ export class CVKeywordsService {
   }
 
   /**
+   * Delete all CV categories
+   *
+   * This method removes all CV categories from the database
+   */
+  async deleteAllCategories(): Promise<void> {
+    await this.categoryRepository.delete({});
+  }
+
+  /**
    * Get job keywords from the job keywords service
    */
   private async getJobKeywords(jobId: string): Promise<any> {

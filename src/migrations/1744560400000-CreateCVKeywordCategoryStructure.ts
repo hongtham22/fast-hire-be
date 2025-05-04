@@ -55,7 +55,7 @@ export class CreateCVKeywordCategoryStructure1744560400000
       ('education'),
       ('experience'),
       ('language'),
-      ('programing_langugue'),
+      ('programming_language'),
       ('soft_skill'),
       ('technical_skill')
     `);

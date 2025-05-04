@@ -137,6 +137,9 @@ export class ApplicationsService {
     // - Delete all cv_keyword_category records related to the cv_keywords
     await this.applicationRepository.delete({});
 
+    // Also delete all cv_categories
+    await this.cvKeywordsService.deleteAllCategories();
+
     // Optionally delete all applicants
     if (deleteApplicants) {
       await this.applicantsService.deleteAll();

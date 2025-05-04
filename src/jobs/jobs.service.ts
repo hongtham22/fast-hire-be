@@ -6,6 +6,7 @@ import { JobListItemDto, JobListResponseDto } from './dto/job-list.dto';
 import { JDKeyword } from '../jd_keywords/jd-keyword.entity';
 import { JDCategory } from '../jd_keywords/jd-category.entity';
 import { JDKeywordCategory } from '../jd_keywords/jd-keyword-category.entity';
+import { CreateJobDto } from './dto/create-job.dto';
 import axios from 'axios';
 
 @Injectable()
@@ -21,6 +22,60 @@ export class JobsService {
     private readonly jdKeywordCategoryRepository: Repository<JDKeywordCategory>,
     private dataSource: DataSource,
   ) {}
+
+  /**
+   * Create a new job
+   * @param createJobDto - The DTO with job information
+   * @returns The created job
+   */
+  async create(createJobDto: CreateJobDto): Promise<Job> {
+    try {
+      const job = this.jobRepository.create(createJobDto);
+      return await this.jobRepository.save(job);
+    } catch (error) {
+      console.error('Error creating job:', error);
+      throw new HttpException(
+        `Failed to create job: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Create a new job with default HR user
+   * @param createJobDto - The DTO with job information
+   * @returns The created job
+   */
+  async createWithDefaultHR(createJobDto: CreateJobDto): Promise<Job> {
+    try {
+      // Get the default HR user
+      const hrUser = await this.dataSource.query(
+        `SELECT id FROM users WHERE email = 'hr@fasthire.com' LIMIT 1`,
+      );
+
+      if (!hrUser || hrUser.length === 0) {
+        throw new HttpException(
+          'Default HR user not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Add the createdBy field to the DTO
+      const jobData = {
+        ...createJobDto,
+        createdBy: hrUser[0].id,
+      };
+
+      const job = this.jobRepository.create(jobData);
+      return await this.jobRepository.save(job);
+    } catch (error) {
+      console.error('Error creating job with default HR:', error);
+      throw new HttpException(
+        `Failed to create job: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   /**
    * Lấy danh sách tất cả các job đang mở (status khác CLOSED)
@@ -233,7 +288,6 @@ export class JobsService {
     const requestData = {
       jobTitle: job.jobTitle,
       location: job.location?.name || '',
-      jobType: 'Full-time',
       experienceYears: job.experienceYear.toString(),
       keyResponsibilities: job.keyResponsibility || '',
       mustHave: job.mustHave || '',
@@ -288,7 +342,7 @@ export class JobsService {
             'experience_years',
             'key_responsibilities',
             'language',
-            'programing_langugue',
+            'programming_language',
             'role_job',
             'soft_skill',
             'technical_skill',
@@ -414,5 +468,72 @@ export class JobsService {
     }
 
     return { processed, skipped };
+  }
+
+  /**
+   * Delete a job and all of its related JD keywords
+   * @param jobId - The ID of the job to delete
+   * @returns Message indicating successful deletion
+   */
+  async deleteJobWithKeywords(jobId: string): Promise<{ message: string }> {
+    // Create a query runner for transaction
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // First, check if the job exists
+      const job = await this.jobRepository.findOne({
+        where: { id: jobId },
+      });
+
+      if (!job) {
+        throw new HttpException(
+          `Job with ID ${jobId} not found`,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Find the JD keyword entry for this job
+      const jdKeyword = await this.jdKeywordRepository.findOne({
+        where: { jobId },
+        relations: ['categories'],
+      });
+
+      if (jdKeyword) {
+        // Delete all JDKeywordCategory entries first (due to foreign key constraints)
+        if (jdKeyword.categories && jdKeyword.categories.length > 0) {
+          await queryRunner.manager.delete(
+            JDKeywordCategory,
+            jdKeyword.categories.map((category) => category.id),
+          );
+        }
+
+        // Then delete the JDKeyword entry
+        await queryRunner.manager.delete(JDKeyword, jdKeyword.id);
+      }
+
+      // Finally, delete the job
+      await queryRunner.manager.delete(Job, jobId);
+
+      // Commit the transaction
+      await queryRunner.commitTransaction();
+
+      return {
+        message: `Job with ID ${jobId} and its related data successfully deleted`,
+      };
+    } catch (error) {
+      // Rollback transaction in case of error
+      await queryRunner.rollbackTransaction();
+
+      console.error(`Error deleting job with ID ${jobId}:`, error);
+      throw new HttpException(
+        error.message || `Failed to delete job with ID ${jobId}`,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    } finally {
+      // Release query runner
+      await queryRunner.release();
+    }
   }
 }

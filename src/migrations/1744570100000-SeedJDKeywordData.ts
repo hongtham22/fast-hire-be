@@ -130,12 +130,12 @@ export class SeedJDKeywordData1744570100000 implements MigrationInterface {
       );
     `);
 
-    // Add data for programing_langugue
+    // Add data for programming_language
     await queryRunner.query(`
       INSERT INTO jd_keyword_category (jd_keyword_id, category_id, value)
       VALUES (
         '${jdKeywordId}',
-        '${categoryMap['programing_langugue']}',
+        '${categoryMap['programming_language']}',
         '[
           {
             "requirement_type": "must_have",

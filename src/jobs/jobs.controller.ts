@@ -8,6 +8,8 @@ import {
   NotFoundException,
   UseGuards,
   Post,
+  Body,
+  Delete,
 } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -16,7 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 // import { UserRole } from '../users/user-role.enum';
 import { JobStatus } from './job.entity';
-import axios from 'axios';
+import { CreateJobDto } from './dto/create-job.dto';
 
 @Controller('jobs')
 export class JobsController {
@@ -84,6 +86,18 @@ export class JobsController {
     return keywords;
   }
 
+  @Post('create-with-keywords')
+  @Public() // For testing purposes, consider adding proper auth guards
+  async createJobWithKeywords(@Body() createJobDto: CreateJobDto) {
+    // First create the job with default HR user
+    const job = await this.jobsService.createWithDefaultHR(createJobDto);
+
+    // Then extract and store keywords
+    await this.jobsService.extractAndStoreJDKeywords(job.id);
+
+    return job;
+  }
+
   @Post(':id/extract-keywords')
   @Public() // For testing purposes, consider adding proper auth guards
   async extractJobKeywords(@Param('id', ParseUUIDPipe) id: string) {
@@ -94,5 +108,11 @@ export class JobsController {
   @Public() // For testing purposes, consider adding proper auth guards
   async processAllJobKeywords() {
     return this.jobsService.processAllJobsForKeywords();
+  }
+
+  @Delete(':id')
+  @Public() // For testing purposes, consider adding proper auth guards later
+  async deleteJob(@Param('id', ParseUUIDPipe) id: string) {
+    return this.jobsService.deleteJobWithKeywords(id);
   }
 }
