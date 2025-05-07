@@ -2,7 +2,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class SeedJDKeywordData1744570100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Lấy ID của job "Senior Ruby on Rails Developer"
+    // Get ID of the job "Senior Ruby on Rails Developer"
     const jobResult = await queryRunner.query(`
       SELECT id FROM jobs WHERE job_title = 'Senior Ruby on Rails Developer' LIMIT 1;
     `);
@@ -16,7 +16,7 @@ export class SeedJDKeywordData1744570100000 implements MigrationInterface {
 
     const jobId = jobResult[0].id;
 
-    // Tạo JD keyword cho job
+    // Create JD keyword for the job
     const jdKeywordResult = await queryRunner.query(`
       INSERT INTO jd_keywords (job_id) 
       VALUES ('${jobId}')

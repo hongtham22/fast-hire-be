@@ -78,9 +78,9 @@ export class JobsService {
   }
 
   /**
-   * Lấy danh sách tất cả các job đang mở (status khác CLOSED)
-   * @param options Các tùy chọn lọc và phân trang
-   * @returns Danh sách job đang mở
+   * Get all open jobs (status not CLOSED)
+   * @param options Filtering and pagination options
+   * @returns List of open jobs
    */
   async findOpenJobs(options?: {
     page?: number;
@@ -101,28 +101,28 @@ export class JobsService {
         approvedStatus: JobStatus.APPROVED,
       });
 
-    // Nếu có filter theo location
+    // If filtering by location
     if (options?.locationId) {
       queryBuilder.andWhere('job.locationId = :locationId', {
         locationId: options.locationId,
       });
     }
 
-    // Thêm điều kiện lọc ngày hết hạn
+    // Add expiration date filtering condition
     queryBuilder.andWhere('(job.expireDate IS NULL OR job.expireDate > NOW())');
 
-    // Thêm điều kiện tìm kiếm theo title
+    // Add search condition by title
     if (options?.query) {
-      // in hoa in đậm không phân biệt, chữ viết hoa viết thường không phân biệt
+      // case insensitive search
       queryBuilder.andWhere('job.jobTitle ILIKE :query', {
         query: `%${options.query}%`,
       });
     }
 
-    // Sắp xếp theo ngày tạo mới nhất
+    // Sort by creation date (newest first)
     queryBuilder.orderBy('job.createdAt', 'DESC');
 
-    // Thêm phân trang
+    // Add pagination
     queryBuilder.skip(skip).take(limit);
 
     const [jobs, total] = await queryBuilder.getManyAndCount();
@@ -131,9 +131,9 @@ export class JobsService {
   }
 
   /**
-   * Lấy danh sách tất cả các job cho HR kèm theo số lượng application
-   * @param options Các tùy chọn lọc và phân trang
-   * @returns Danh sách job và thông tin liên quan
+   * Get all jobs for HR with application count
+   * @param options Filtering and pagination options
+   * @returns List of jobs and related information
    */
   async findAllJobsForHR(options?: {
     page?: number;
@@ -235,9 +235,9 @@ export class JobsService {
   }
 
   /**
-   * Lấy thông tin JD keywords của một job
-   * @param jobId - ID của job cần lấy keywords
-   * @returns Thông tin JD keyword của job
+   * Get JD keywords for a job
+   * @param jobId - ID of the job to get keywords for
+   * @returns JD keyword information for the job
    */
   async getJDKeywords(jobId: string) {
     const jdKeyword = await this.jdKeywordRepository.findOne({
@@ -260,12 +260,12 @@ export class JobsService {
   }
 
   /**
-   * Trích xuất và lưu trữ thông tin keyword từ job description
-   * @param jobId - ID của job cần trích xuất keyword
-   * @returns Thông tin JD keyword đã được lưu trữ
+   * Extract and store keyword information from job description
+   * @param jobId - ID of the job to extract keywords for
+   * @returns Stored JD keyword information
    */
   async extractAndStoreJDKeywords(jobId: string): Promise<JDKeyword> {
-    // Kiểm tra nếu job đã có keywords
+    // Check if job already has keywords
     const existingKeyword = await this.jdKeywordRepository.findOne({
       where: { jobId },
       relations: ['categories'],
@@ -275,14 +275,14 @@ export class JobsService {
       return existingKeyword;
     }
 
-    // Lấy thông tin chi tiết của job
+    // Get detailed job information
     const job = await this.jobRepository.findOne({
       where: { id: jobId },
       relations: ['location'],
     });
 
     if (!job) {
-      throw new HttpException('Job không tồn tại', HttpStatus.NOT_FOUND);
+      throw new HttpException('Job does not exist', HttpStatus.NOT_FOUND);
     }
 
     const requestData = {
@@ -297,36 +297,36 @@ export class JobsService {
 
     const apiUrl = 'http://host.docker.internal:5000/parse-jd';
 
-    // Thêm logging chi tiết
-    console.log('Bắt đầu gửi request đến Flask API:', new Date().toISOString());
+    // Add detailed logging
+    console.log('Starting request to Flask API:', new Date().toISOString());
     console.log(
       'Job data:',
       JSON.stringify(requestData).substring(0, 500) + '...',
     );
 
-    // Sử dụng hàm retry để thử lại nếu timeout
+    // Use retry function for timeout handling
     const MAX_RETRIES = 3;
     let lastError = null;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         console.log(
-          `Attempt ${attempt}/${MAX_RETRIES} - Gửi request đến: ${apiUrl}`,
+          `Attempt ${attempt}/${MAX_RETRIES} - Sending request to: ${apiUrl}`,
         );
 
         const startTime = Date.now();
         const response = await axios.post(apiUrl, requestData, {
-          timeout: 120000, // 2 phút
+          timeout: 120000, // 2 minutes
           headers: { 'Content-Type': 'application/json' },
         });
         const endTime = Date.now();
 
-        console.log(`Request thành công sau ${(endTime - startTime) / 1000}s`);
+        console.log(`Request successful after ${(endTime - startTime) / 1000}s`);
         console.log('Response status:', response.status);
 
         const keywordData = response.data;
 
-        // Xử lý dữ liệu nếu request thành công
+        // Process data if request is successful
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
@@ -390,60 +390,60 @@ export class JobsService {
         } catch (error) {
           await queryRunner.rollbackTransaction();
           throw new HttpException(
-            `Lỗi khi lưu trữ JD keywords: ${error.message}`,
+            `Error storing JD keywords: ${error.message}`,
             HttpStatus.INTERNAL_SERVER_ERROR,
           );
         } finally {
           await queryRunner.release();
         }
 
-        // Nếu request thành công, thoát khỏi vòng lặp
+        // If request is successful, exit the loop
         break;
       } catch (error) {
         lastError = error;
         console.error(`Attempt ${attempt} failed: ${error.message}`);
 
-        // Nếu không phải là lỗi timeout hoặc đã thử hết số lần, thì throw lỗi
+        // If it's not a timeout error or we've tried the maximum times, throw the error
         if (error.code !== 'ECONNABORTED' && error.code !== 'ETIMEDOUT') {
           if (error.code === 'ECONNREFUSED') {
             throw new HttpException(
-              'Không thể kết nối đến API Flask. Vui lòng kiểm tra Flask API.',
+              'Cannot connect to Flask API. Please check the Flask API.',
               HttpStatus.SERVICE_UNAVAILABLE,
             );
           }
           throw new HttpException(
-            `Lỗi khi gọi API parse-jd: ${error.message}`,
+            `Error calling parse-jd API: ${error.message}`,
             HttpStatus.INTERNAL_SERVER_ERROR,
           );
         }
 
-        // Nếu còn lần retry, đợi một chút trước khi thử lại
+        // If there are retries left, wait a bit before trying again
         if (attempt < MAX_RETRIES) {
-          const waitTime = 2000 * attempt; // Tăng thời gian chờ theo số lần thử
-          console.log(`Đợi ${waitTime}ms trước khi thử lại...`);
+          const waitTime = 2000 * attempt; // Increase wait time based on attempt count
+          console.log(`Waiting ${waitTime}ms before retrying...`);
           await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
       }
     }
 
-    // Nếu đã thử hết số lần mà vẫn thất bại
+    // If all attempts fail
     if (lastError) {
       throw new HttpException(
-        `Lỗi timeout sau ${MAX_RETRIES} lần thử: ${lastError.message}`,
+        `Timeout after ${MAX_RETRIES} attempts: ${lastError.message}`,
         HttpStatus.REQUEST_TIMEOUT,
       );
     }
   }
 
   /**
-   * Trích xuất và lưu trữ keywords cho tất cả các job chưa có keyword
-   * @returns Danh sách job đã được xử lý
+   * Extract and store keywords for all jobs that don't have keywords yet
+   * @returns List of processed jobs
    */
   async processAllJobsForKeywords(): Promise<{
     processed: number;
     skipped: number;
   }> {
-    // Lấy tất cả các job đã được phê duyệt
+    // Get all approved jobs
     const jobs = await this.jobRepository.find({
       where: { status: JobStatus.APPROVED },
     });
@@ -451,7 +451,7 @@ export class JobsService {
     let processed = 0;
     let skipped = 0;
 
-    // Kiểm tra từng job đã có keyword chưa
+    // Check if each job already has keywords
     for (const job of jobs) {
       const existingKeyword = await this.jdKeywordRepository.findOne({
         where: { jobId: job.id },
@@ -462,7 +462,7 @@ export class JobsService {
         continue;
       }
 
-      // Xử lý job chưa có keyword
+      // Process job without keywords
       await this.extractAndStoreJDKeywords(job.id);
       processed++;
     }

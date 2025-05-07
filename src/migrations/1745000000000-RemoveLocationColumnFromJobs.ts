@@ -6,7 +6,7 @@ export class RemoveLocationColumnFromJobs1745000000000
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Before dropping the column, ensure all jobs have location_id
     await queryRunner.query(`
-      -- Tạo locations mới cho bất kỳ job nào chưa có location_id
+      -- Create new locations for any jobs that don't have location_id
       INSERT INTO locations (name)
       SELECT DISTINCT jobs.location
       FROM jobs

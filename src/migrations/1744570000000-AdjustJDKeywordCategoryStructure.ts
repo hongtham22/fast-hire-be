@@ -4,13 +4,13 @@ export class AdjustJDKeywordCategoryStructure1744570000000
   implements MigrationInterface
 {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Xóa bảng cũ nếu tồn tại
+    // Delete old tables if they exist
     await queryRunner.query(
       `DROP TABLE IF EXISTS jd_keyword_category CASCADE;`,
     );
     await queryRunner.query(`DROP TABLE IF EXISTS jd_categories CASCADE;`);
 
-    // Tạo bảng jd_categories với tên category duy nhất
+    // Create jd_categories table with unique category names
     await queryRunner.query(`
       CREATE TABLE jd_categories (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -19,7 +19,7 @@ export class AdjustJDKeywordCategoryStructure1744570000000
       );
     `);
 
-    // Thêm các category mặc định
+    // Add default categories
     await queryRunner.query(`
       INSERT INTO jd_categories (name) VALUES 
       ('certificate'),
@@ -33,7 +33,7 @@ export class AdjustJDKeywordCategoryStructure1744570000000
       ('technical_skill')
     `);
 
-    // Tạo lại bảng jd_keyword_category với cấu trúc mới
+    // Recreate jd_keyword_category table with new structure
     await queryRunner.query(`
       CREATE TABLE jd_keyword_category (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -46,7 +46,7 @@ export class AdjustJDKeywordCategoryStructure1744570000000
       );
     `);
 
-    // Tạo các index cần thiết
+    // Create necessary indexes
     await queryRunner.query(`
       CREATE INDEX idx_jd_keyword_category_jd_keyword_id ON jd_keyword_category(jd_keyword_id);
       CREATE INDEX idx_jd_keyword_category_category_id ON jd_keyword_category(category_id);

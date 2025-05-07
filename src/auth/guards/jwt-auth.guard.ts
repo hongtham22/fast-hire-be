@@ -22,9 +22,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     try {
       return super.canActivate(context);
     } catch (error) {
-      // Tạm thời cho phép tất cả các request khi không có JWT strategy
+      // Temporarily allow all requests when JWT strategy is not available
       console.warn('JWT authentication error:', error.message);
-      return true; // Thêm tạm thời để test
+      return true; // Added temporarily for testing
     }
   }
 }
