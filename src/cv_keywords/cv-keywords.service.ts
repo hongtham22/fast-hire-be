@@ -118,9 +118,17 @@ export class CVKeywordsService {
     await this.applicationRepository.update(applicationId, {
       matchingScore: data.matching_score || 0,
       missingFeedback: data.missing_feedback || 'No feedback available',
+      roleScore: data.role_score || 0,
+      expScore: data.exp_score || 0,
+      programmingScore: data.programming_score || 0,
+      technicalScore: data.technical_score || 0,
+      softScore: data.soft_score || 0,
+      langsScore: data.langs_score || 0,
+      keyScore: data.key_score || 0,
+      certScore: data.cert_score || 0,
     });
     console.log(
-      `Updated application ${applicationId} with matching score and feedback`,
+      `Updated application ${applicationId} with matching scores and feedback`,
     );
 
     // Save structured keyword data if available

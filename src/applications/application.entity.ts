@@ -40,6 +40,78 @@ export class Application {
   })
   matchingScore: number;
 
+  @Column({
+    name: 'role_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  roleScore: number;
+
+  @Column({
+    name: 'exp_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  expScore: number;
+
+  @Column({
+    name: 'programming_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  programmingScore: number;
+
+  @Column({
+    name: 'technical_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  technicalScore: number;
+
+  @Column({
+    name: 'soft_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  softScore: number;
+
+  @Column({
+    name: 'langs_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  langsScore: number;
+
+  @Column({
+    name: 'key_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  keyScore: number;
+
+  @Column({
+    name: 'cert_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  certScore: number;
+
   @Column({ name: 'missing_feedback', type: 'text', nullable: true })
   missingFeedback: string;
 
