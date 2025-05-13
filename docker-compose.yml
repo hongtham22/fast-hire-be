@@ -12,8 +12,11 @@ services:
       - PG_PASSWORD=${PG_PASSWORD}
       - PG_DB=${PG_DB}
       - PG_PORT=${PG_PORT}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - db
+      - redis
     volumes:
       - .:/usr/src/app
       - ./uploads:/usr/src/app/uploads
@@ -27,5 +30,13 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6380:6379
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
 volumes:
   pgdata: {}
+  redisdata: {}

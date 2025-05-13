@@ -9,12 +9,14 @@ import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ApplicantsModule } from '../applicants/applicants.module';
 import { CVKeywordsModule } from '../cv_keywords/cv-keywords.module';
+import { CvProcessingModule } from '../cv-processing/cv-processing.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Application]),
     ApplicantsModule,
     forwardRef(() => CVKeywordsModule),
+    CvProcessingModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/cvs',

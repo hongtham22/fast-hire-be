@@ -6,14 +6,16 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicantsService } from '../applicants/applicants.service';
 import { SubmitApplicationDto } from './dto/submit-application.dto';
 import { CVKeywordsService } from '../cv_keywords/cv-keywords.service';
+import { CvProcessingService } from '../cv-processing/cv-processing.service';
 
 @Injectable()
 export class ApplicationsService {
   constructor(
     @InjectRepository(Application)
-    private applicationRepository: Repository<Application>,
-    private applicantsService: ApplicantsService,
-    private cvKeywordsService: CVKeywordsService,
+    private readonly applicationRepository: Repository<Application>,
+    private readonly applicantsService: ApplicantsService,
+    private readonly cvKeywordsService: CVKeywordsService,
+    private readonly cvProcessingService: CvProcessingService,
   ) {}
 
   async create(
@@ -65,25 +67,24 @@ export class ApplicationsService {
     const savedApplication =
       await this.applicationRepository.save(newApplication);
 
-    // 4. Process CV to extract keywords and perform JD matching
+    // 4. Add CV processing to queue
     try {
       console.log(
-        `Application submission: Processing CV to extract keywords and perform JD matching for application ${savedApplication.id}`,
+        `Application submission: Adding CV processing to queue for application ${savedApplication.id}`,
       );
-      // Pass the jobId to enable JD matching
-      await this.cvKeywordsService.processCV(
+      await this.cvProcessingService.addCvProcessingJob(
         savedApplication.id,
         cvFilePath,
-        jobId, // Pass jobId to enable JD matching
+        jobId,
       );
       console.log(
-        `Application submission: CV keywords extraction and matching completed for application ${savedApplication.id}`,
+        `Application submission: CV processing job added to queue for application ${savedApplication.id}`,
       );
     } catch (error) {
       console.error(
-        `Application submission: Failed to extract CV keywords or perform matching: ${error.message}`,
+        `Application submission: Failed to add CV processing to queue: ${error.message}`,
       );
-      // Don't fail the application submission if keyword extraction fails
+      // Don't fail the application submission if queue addition fails
     }
 
     return savedApplication;

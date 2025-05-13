@@ -27,11 +27,28 @@ import { ApplicantsModule } from './applicants/applicants.module';
 import { CVKeywordsModule } from './cv_keywords/cv-keywords.module';
 import { JdKeywordsModule } from './jd_keywords/jd-keywords.module';
 import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bull';
+import { CvProcessingModule } from './cv-processing/cv-processing.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+      },
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -65,6 +82,7 @@ import { ConfigModule } from '@nestjs/config';
     ApplicantsModule,
     CVKeywordsModule,
     JdKeywordsModule,
+    CvProcessingModule,
   ],
   controllers: [AppController, UploadsController],
   providers: [
