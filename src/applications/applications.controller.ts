@@ -10,6 +10,7 @@ import {
   BadRequestException,
   Delete,
   Query,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApplicationsService } from './applications.service';
@@ -17,6 +18,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { Application } from './application.entity';
 import { Public } from '../auth/decorators/public.decorator';
 import { SubmitApplicationDto } from './dto/submit-application.dto';
+import { EvaluateApplicationDto } from './dto/evaluate-application.dto';
 
 @Controller('applications')
 export class ApplicationsController {
@@ -88,6 +90,27 @@ export class ApplicationsController {
     return this.applicationsService.findByApplicantId(applicantId);
   }
 
+  @Get(':jobId/applications/:applicationId')
+  @Public()
+  async findOneByJobAndApplication(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+  ): Promise<Application> {
+    const application =
+      await this.applicationsService.findOneByJobAndApplication(
+        jobId,
+        applicationId,
+      );
+
+    if (!application) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found for job ${jobId}`,
+      );
+    }
+
+    return application;
+  }
+
   /**
    * Delete all application records and related data
    * @param deleteApplicants Optional query param to delete applicants as well
@@ -99,5 +122,31 @@ export class ApplicationsController {
     @Query('deleteApplicants') deleteApplicants?: boolean,
   ): Promise<void> {
     return this.applicationsService.deleteAll(deleteApplicants);
+  }
+
+  @Post(':jobId/applications/:applicationId/evaluate')
+  @Public()
+  async evaluateApplication(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @Body() evaluateDto: EvaluateApplicationDto,
+  ): Promise<Application> {
+    const application =
+      await this.applicationsService.findOneByJobAndApplication(
+        jobId,
+        applicationId,
+      );
+
+    if (!application) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found for job ${jobId}`,
+      );
+    }
+
+    return this.applicationsService.evaluateApplication(
+      applicationId,
+      evaluateDto.note,
+      evaluateDto.result,
+    );
   }
 }

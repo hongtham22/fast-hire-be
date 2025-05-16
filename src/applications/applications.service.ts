@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from './application.entity';
@@ -123,6 +123,19 @@ export class ApplicationsService {
     });
   }
 
+  async findOneByJobAndApplication(
+    jobId: string,
+    applicationId: string,
+  ): Promise<Application | null> {
+    return this.applicationRepository.findOne({
+      where: {
+        id: applicationId,
+        jobId: jobId,
+      },
+      relations: ['applicant', 'job', 'cvKeyword'],
+    });
+  }
+
   /**
    * Delete all applications and related data
    *
@@ -145,5 +158,24 @@ export class ApplicationsService {
     if (deleteApplicants) {
       await this.applicantsService.deleteAll();
     }
+  }
+
+  async evaluateApplication(
+    applicationId: string,
+    note: string,
+    result: boolean,
+  ): Promise<Application> {
+    const application = await this.applicationRepository.findOne({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException(`Application ${applicationId} not found`);
+    }
+
+    application.note = note;
+    application.result = result;
+
+    return this.applicationRepository.save(application);
   }
 }
