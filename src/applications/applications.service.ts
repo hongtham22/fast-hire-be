@@ -113,6 +113,9 @@ export class ApplicationsService {
     return this.applicationRepository.find({
       where: { jobId },
       relations: ['applicant', 'cvKeyword'],
+      order: {
+        submittedAt: 'DESC',
+      },
     });
   }
 
