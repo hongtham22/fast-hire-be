@@ -1,22 +1,20 @@
 FROM node:18.20.7-alpine
 
-# Create app directory
 WORKDIR /usr/src/app
 
-# Install app dependencies
+# Install dependencies
 COPY package*.json ./
+RUN npm install -g @nestjs/cli && npm install
 
-RUN npm install
-
-# Bundle app source
+# Copy app source
 COPY . .
 
-RUN npm run build
+# Ensure hot reload works
+RUN apk add --no-cache dumb-init
 
 EXPOSE 3000
 
-# Add healthcheck
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
-CMD [ "npm", "run" , "start:dev" ]
+CMD ["dumb-init", "npm", "run", "start:dev"]
