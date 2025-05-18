@@ -110,12 +110,113 @@ export class ApplicationsService {
   }
 
   async findByJobId(jobId: string): Promise<Application[]> {
-    return this.applicationRepository.find({
+    const applications = await this.applicationRepository.find({
       where: { jobId },
-      relations: ['applicant', 'cvKeyword'],
+      relations: [
+        'applicant',
+        'job',
+        'cvKeyword',
+        'cvKeyword.categories',
+        'cvKeyword.categories.category',
+      ],
       order: {
         submittedAt: 'DESC',
       },
+    });
+
+    // Extract structured data from cvKeyword for each application
+    return applications.map((app) => {
+      if (app.cvKeyword) {
+        try {
+          // Create structured_data object from categories
+          const structuredData: Record<string, any> = {};
+
+          // Process categories and build structured data
+          if (app.cvKeyword.categories && app.cvKeyword.categories.length > 0) {
+            for (const categoryItem of app.cvKeyword.categories) {
+              if (categoryItem.category && categoryItem.category.name) {
+                structuredData[categoryItem.category.name] =
+                  categoryItem.value || null;
+              }
+            }
+          }
+
+          if (Object.keys(structuredData).length > 0) {
+            // Extract programming languages (limit to 6)
+            const programmingLanguages =
+              structuredData['programming_language']?.slice(0, 6) || [];
+
+            // Extract technical skills (limit to 9)
+            const technicalSkills =
+              structuredData['technical_skill']?.slice(0, 9) || [];
+
+            // Extract languages (limit to 3)
+            const languages = structuredData['language']?.slice(0, 3) || [];
+
+            // Extract education information
+            const education = structuredData['education'] || [];
+
+            // Extract experience information
+            const experiences = structuredData['experience'] || [];
+
+            // Calculate total experience years (if available)
+            let totalExperienceYears = 0;
+
+            // First check if experience_years is directly available in the candidate info
+            if (
+              structuredData['candidate'] &&
+              structuredData['candidate'].experience_years !== undefined
+            ) {
+              totalExperienceYears = Number(
+                structuredData['candidate'].experience_years,
+              );
+            }
+            // Otherwise calculate from detailed experience entries
+            else if (experiences && experiences.length > 0) {
+              totalExperienceYears = experiences.reduce((total, exp) => {
+                if (exp.start_date && (exp.end_date || exp.is_current)) {
+                  const startDate = new Date(exp.start_date);
+                  const endDate = exp.is_current
+                    ? new Date()
+                    : new Date(exp.end_date);
+                  const years =
+                    (endDate.getTime() - startDate.getTime()) /
+                    (1000 * 60 * 60 * 24 * 365);
+                  return total + years;
+                }
+                return total;
+              }, 0);
+              // Round to 1 decimal place
+              totalExperienceYears = Math.round(totalExperienceYears * 10) / 10;
+            }
+
+            return {
+              ...app,
+              skills: programmingLanguages,
+              technical_skills: technicalSkills,
+              languages: languages,
+              education: education,
+              experience_years: totalExperienceYears,
+              hasStructuredData: true,
+              hasNote: app.note !== null && app.note !== '',
+            };
+          }
+        } catch (error) {
+          console.error('Error processing CV keyword data:', error);
+        }
+      }
+
+      // Return original application if no structured data available
+      return {
+        ...app,
+        skills: [],
+        technical_skills: [],
+        languages: [],
+        education: [],
+        experience_years: null,
+        hasStructuredData: false,
+        hasNote: app.note !== null && app.note !== '',
+      };
     });
   }
 
