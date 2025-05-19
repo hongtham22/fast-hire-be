@@ -7,6 +7,7 @@ import { JDKeyword } from '../jd_keywords/jd-keyword.entity';
 import { JDCategory } from '../jd_keywords/jd-category.entity';
 import { JDKeywordCategory } from '../jd_keywords/jd-keyword-category.entity';
 import { CreateJobDto } from './dto/create-job.dto';
+import { UpdateJobDto } from './dto/update-job.dto';
 import axios from 'axios';
 
 @Injectable()
@@ -534,6 +535,42 @@ export class JobsService {
     } finally {
       // Release query runner
       await queryRunner.release();
+    }
+  }
+
+  /**
+   * Update a job
+   * @param id - The ID of the job to update
+   * @param updateJobDto - The DTO with updated job information
+   * @returns The updated job
+   */
+  async update(id: string, updateJobDto: UpdateJobDto): Promise<Job | null> {
+    try {
+      // First check if job exists
+      const job = await this.jobRepository.findOne({
+        where: { id },
+        relations: ['location', 'creator'],
+      });
+
+      if (!job) {
+        return null;
+      }
+
+      // Update job with new data
+      Object.assign(job, updateJobDto);
+
+      // If status is being updated to pending, ensure it's set
+      if (updateJobDto.status) {
+        job.status = updateJobDto.status;
+      }
+
+      return await this.jobRepository.save(job);
+    } catch (error) {
+      console.error(`Error updating job with ID ${id}:`, error);
+      throw new HttpException(
+        `Failed to update job: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
