@@ -130,4 +130,19 @@ export class JobsController {
     }
     return job;
   }
+
+  /**
+   * Close a job
+   * @param id Job ID
+   * @param body Body with close reason
+   * @returns The closed job
+   */
+  @Post(':id/close')
+  @Public() // For testing purposes, consider adding proper auth guards later
+  async closeJob(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { closeReason: 'manual' | 'expired' }
+  ) {
+    return this.jobsService.closeJob(id, body.closeReason || 'manual');
+  }
 }

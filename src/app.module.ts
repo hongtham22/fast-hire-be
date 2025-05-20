@@ -29,6 +29,7 @@ import { JdKeywordsModule } from './jd_keywords/jd-keywords.module';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { CvProcessingModule } from './cv-processing/cv-processing.module';
+import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { CvProcessingModule } from './cv-processing/cv-processing.module';
     CVKeywordsModule,
     JdKeywordsModule,
     CvProcessingModule,
+    ScheduledTasksModule,
   ],
   controllers: [AppController, UploadsController],
   providers: [

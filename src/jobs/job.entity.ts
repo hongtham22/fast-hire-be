@@ -64,6 +64,9 @@ export class Job {
   })
   status: JobStatus;
 
+  @Column({ name: 'close_reason', nullable: true })
+  closeReason: 'manual' | 'expired' | null;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   creator: User;

@@ -1,3 +1,4 @@
+import './crypto-polyfill';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { join } from 'path';

@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Not, IsNull } from 'typeorm';
 import { Job, JobStatus } from './job.entity';
 import { JobListItemDto, JobListResponseDto } from './dto/job-list.dto';
 import { JDKeyword } from '../jd_keywords/jd-keyword.entity';
@@ -322,7 +322,9 @@ export class JobsService {
         });
         const endTime = Date.now();
 
-        console.log(`Request successful after ${(endTime - startTime) / 1000}s`);
+        console.log(
+          `Request successful after ${(endTime - startTime) / 1000}s`,
+        );
         console.log('Response status:', response.status);
 
         const keywordData = response.data;
@@ -569,6 +571,64 @@ export class JobsService {
       console.error(`Error updating job with ID ${id}:`, error);
       throw new HttpException(
         `Failed to update job: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Find all approved jobs that have passed their expiration date
+   * @returns List of expired jobs
+   */
+  async findExpiredJobs(): Promise<Job[]> {
+    try {
+      // Find all approved jobs where expiration date is set and has passed
+      const currentDate = new Date();
+
+      return this.jobRepository
+        .find({
+          where: {
+            status: JobStatus.APPROVED,
+            expireDate: Not(IsNull()),
+          },
+          relations: ['location'],
+        })
+        .then((jobs) => jobs.filter((job) => job.expireDate < currentDate));
+    } catch (error) {
+      console.error('Error finding expired jobs:', error);
+      throw new HttpException(
+        `Failed to find expired jobs: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Close a job with the given reason
+   * @param jobId - ID of the job to close
+   * @param reason - Reason for closing (manual or expired)
+   * @returns The updated job
+   */
+  async closeJob(jobId: string, reason: 'manual' | 'expired'): Promise<Job> {
+    try {
+      const job = await this.findOne(jobId);
+
+      if (!job) {
+        throw new HttpException(
+          `Job with ID ${jobId} not found`,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Update job status and close reason
+      job.status = JobStatus.CLOSED;
+      job.closeReason = reason;
+
+      return this.jobRepository.save(job);
+    } catch (error) {
+      console.error(`Error closing job ${jobId}:`, error);
+      throw new HttpException(
+        `Failed to close job: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
