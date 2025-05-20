@@ -16,6 +16,7 @@ export enum JobStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   CLOSED = 'closed',
+  REJECTED = 'rejected',
 }
 
 @Entity('jobs')
