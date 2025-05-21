@@ -7,6 +7,8 @@ import { ApplicantsService } from '../applicants/applicants.service';
 import { SubmitApplicationDto } from './dto/submit-application.dto';
 import { CVKeywordsService } from '../cv_keywords/cv-keywords.service';
 import { CvProcessingService } from '../cv-processing/cv-processing.service';
+import { EmailService } from '../email/email.service';
+import { JobsService } from '../jobs/jobs.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -16,6 +18,8 @@ export class ApplicationsService {
     private readonly applicantsService: ApplicantsService,
     private readonly cvKeywordsService: CVKeywordsService,
     private readonly cvProcessingService: CvProcessingService,
+    private readonly emailService: EmailService,
+    private readonly jobsService: JobsService,
   ) {}
 
   async create(
@@ -67,7 +71,31 @@ export class ApplicationsService {
     const savedApplication =
       await this.applicationRepository.save(newApplication);
 
-    // 4. Add CV processing to queue
+    // Get job details for email
+    const job = await this.jobsService.findOne(jobId);
+
+    // 4. Send application received email
+    try {
+      console.log(
+        `Application submission: Sending application received email to ${email}`,
+      );
+      await this.emailService.sendApplicationReceivedEmail(
+        savedApplication,
+        email,
+        applicant.name,
+        job.jobTitle,
+      );
+      console.log(
+        `Application submission: Application received email sent to ${email}`,
+      );
+    } catch (error) {
+      console.error(
+        `Application submission: Failed to send application received email: ${error.message}`,
+      );
+      // Don't fail the application submission if email sending fails
+    }
+
+    // 5. Add CV processing to queue
     try {
       console.log(
         `Application submission: Adding CV processing to queue for application ${savedApplication.id}`,

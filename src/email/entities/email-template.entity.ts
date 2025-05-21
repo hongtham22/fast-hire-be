@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { MailLog } from './mail-log.entity';
 
 @Entity('email_templates')
@@ -9,17 +16,17 @@ export class EmailTemplate {
   @Column()
   name: string;
 
-  @Column({ name: 'subject_template' })
-  subjectTemplate: string;
+  @Column()
+  subject_template: string;
 
-  @Column({ name: 'body_template', type: 'text' })
-  bodyTemplate: string;
+  @Column()
+  body_template: string;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'NOW()' })
-  createdAt: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-  @Column({ name: 'updated_at', type: 'timestamp', default: () => 'NOW()' })
-  updatedAt: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 
   // Relation with mail logs
   @OneToMany(() => MailLog, (mailLog) => mailLog.emailTemplate)

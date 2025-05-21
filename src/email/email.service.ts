@@ -1,20 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
 import { EmailTemplate } from './entities/email-template.entity';
 import { MailLog } from './entities/mail-log.entity';
 import { CreateMailLogDto } from './dto/create-mail-log.dto';
 import { CreateEmailTemplateDto } from './dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from './dto/update-email-template.dto';
+import { Application } from '@/applications/application.entity';
 
 @Injectable()
 export class EmailService {
+  private transporter: any;
+
   constructor(
+    private configService: ConfigService,
     @InjectRepository(EmailTemplate)
     private readonly emailTemplateRepository: Repository<EmailTemplate>,
     @InjectRepository(MailLog)
     private readonly mailLogRepository: Repository<MailLog>,
-  ) {}
+  ) {
+    this.transporter = nodemailer.createTransport({
+      host: this.configService.get('EMAIL_HOST'),
+      port: this.configService.get('EMAIL_PORT'),
+      secure: this.configService.get('EMAIL_SECURE') === 'true',
+      auth: {
+        user: this.configService.get('EMAIL_USER'),
+        pass: this.configService.get('EMAIL_PASSWORD'),
+      },
+    });
+  }
 
   // Email template methods
   async findAllTemplates(): Promise<EmailTemplate[]> {
@@ -62,9 +78,9 @@ export class EmailService {
 
   async findMailLogsByApplicationId(applicationId: string): Promise<MailLog[]> {
     return this.mailLogRepository.find({
-      where: { applicationId },
+      where: { application_id: applicationId },
       relations: ['application', 'emailTemplate', 'creator'],
-      order: { sentAt: 'DESC' },
+      order: { sent_at: 'DESC' },
     });
   }
 
@@ -98,10 +114,9 @@ export class EmailService {
     if (!template) {
       throw new Error(`Email template with ID ${templateId} not found`);
     }
-
     // Render the template
-    const subject = this.renderTemplate(template.subjectTemplate, context);
-    const message = this.renderTemplate(template.bodyTemplate, context);
+    const subject = this.renderTemplate(template.subject_template, context);
+    const message = this.renderTemplate(template.body_template, context);
 
     // Create a mail log
     const mailLogDto: CreateMailLogDto = {
@@ -117,5 +132,60 @@ export class EmailService {
 
     // Save the log
     return this.createMailLog(mailLogDto);
+  }
+
+  async sendApplicationReceivedEmail(
+    application: Application,
+    recipientEmail: string,
+    candidateName: string,
+    position: string,
+  ): Promise<void> {
+    try {
+      // Find the template
+      const template = await this.emailTemplateRepository.findOne({
+        where: { name: 'Application Received' },
+      });
+
+      if (!template) {
+        console.error('Email template "Application Received" not found');
+        return;
+      }
+
+      // Replace placeholders in subject and body
+      const subject = template.subject_template.replace(
+        '{{position}}',
+        position,
+      );
+
+      let body = template.body_template;
+      body = body.replace('{{candidate_name}}', candidateName);
+      body = body.replace(/\{\{position\}\}/g, position);
+
+      // Send email
+      const mailOptions = {
+        from: this.configService.get('EMAIL_FROM'),
+        to: recipientEmail,
+        subject: subject,
+        html: body,
+      };
+
+      await this.transporter.sendMail(mailOptions);
+
+      // Log the email
+      await this.mailLogRepository.save({
+        application_id: application.id,
+        email_template_id: template.id,
+        subject: subject,
+        message: body,
+      });
+
+      console.log(
+        `Application Received email sent to ${recipientEmail} for application ${application.id}`,
+      );
+    } catch (error) {
+      console.error(
+        `Failed to send application received email: ${error.message}`,
+      );
+    }
   }
 }

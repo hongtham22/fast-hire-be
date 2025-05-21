@@ -1,45 +1,44 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
+  PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Application } from '../../applications/application.entity';
-import { User } from '../../users/user.entity';
 import { EmailTemplate } from './email-template.entity';
+import { User } from '@/users/user.entity';
+import { Application } from '@/applications/application.entity';
 
 @Entity('mail_logs')
 export class MailLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'application_id' })
-  applicationId: string;
+  @Column({ name: 'application_id', nullable: true })
+  application_id: string;
 
-  @Column({ name: 'email_template_id', nullable: true })
-  emailTemplateId: string;
-
-  @Column()
-  subject: string;
-
-  @Column({ type: 'text' })
-  message: string;
-
-  @Column({ name: 'sent_at', type: 'timestamp', default: () => 'NOW()' })
-  sentAt: Date;
-
-  @Column({ name: 'created_by' })
-  createdBy: string;
-
-  // Relations
   @ManyToOne(() => Application)
   @JoinColumn({ name: 'application_id' })
   application: Application;
 
+  @Column({ name: 'email_template_id', nullable: true })
+  email_template_id: string;
+
   @ManyToOne(() => EmailTemplate)
   @JoinColumn({ name: 'email_template_id' })
   emailTemplate: EmailTemplate;
+
+  @Column()
+  subject: string;
+
+  @Column()
+  message: string;
+
+  @Column({ name: 'sent_at', default: () => 'NOW()' })
+  sent_at: Date;
+
+  @Column({ name: 'created_by', nullable: true })
+  created_by: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })

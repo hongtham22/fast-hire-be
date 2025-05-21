@@ -14,6 +14,12 @@ services:
       - PG_PORT=${PG_PORT}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_SECURE=${EMAIL_SECURE}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules

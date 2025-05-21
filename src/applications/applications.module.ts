@@ -5,11 +5,13 @@ import { ApplicationsController } from './applications.controller';
 import { ApplicationsService } from './applications.service';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import { ApplicantsModule } from '../applicants/applicants.module';
 import { CVKeywordsModule } from '../cv_keywords/cv-keywords.module';
 import { CvProcessingModule } from '../cv-processing/cv-processing.module';
+import { JobsModule } from '../jobs/jobs.module';
+import { EmailModule } from '../email/email.module';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Module({
   imports: [
@@ -19,14 +21,20 @@ import { CvProcessingModule } from '../cv-processing/cv-processing.module';
     CvProcessingModule,
     MulterModule.register({
       storage: diskStorage({
-        destination: './uploads/cvs',
-        filename: (req, file, callback) => {
-          const uniqueSuffix = uuidv4();
-          const ext = extname(file.originalname);
-          callback(null, `${uniqueSuffix}${ext}`);
+        destination: (req, file, cb) => {
+          const uploadPath = path.join(process.cwd(), 'uploads', 'cvs');
+          fs.mkdirSync(uploadPath, { recursive: true });
+          cb(null, uploadPath);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          const fileExt = path.extname(file.originalname);
+          cb(null, `${uniqueSuffix}${fileExt}`);
         },
       }),
     }),
+    JobsModule,
+    EmailModule,
   ],
   controllers: [ApplicationsController],
   providers: [ApplicationsService],
