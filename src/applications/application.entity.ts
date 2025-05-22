@@ -121,6 +121,9 @@ export class Application {
   @Column({ name: 'result', type: 'boolean', nullable: true })
   result: boolean;
 
+  @Column({ name: 'email_sent', type: 'boolean', default: false })
+  emailSent: boolean;
+
   @ManyToOne(() => Applicant, (applicant) => applicant.applications, {
     onDelete: 'CASCADE',
   })

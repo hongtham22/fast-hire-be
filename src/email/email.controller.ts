@@ -7,6 +7,8 @@ import {
   Delete,
   Put,
   UseGuards,
+  Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { CreateEmailTemplateDto } from './dto/create-email-template.dto';
@@ -15,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/enums/role.enum';
 import { RolesGuard } from '@/auth/guards/roles.guard';
+import { SendSingleNotificationDto, SendBulkNotificationDto } from './dto/send-notification.dto';
 
 @Controller('email')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -51,27 +54,27 @@ export class EmailController {
 
   @Delete('templates/:id')
   @Roles(Role.ADMIN)
-  deleteTemplate(@Param('id') id: string) {
-    return this.emailService.deleteTemplate(id);
+  removeTemplate(@Param('id') id: string) {
+    return this.emailService.removeTemplate(id);
   }
 
   // Mail logs endpoints
   @Get('logs')
   @Roles(Role.ADMIN, Role.HR)
-  findAllMailLogs() {
-    return this.emailService.findAllMailLogs();
+  findAllLogs() {
+    return this.emailService.findAllLogs();
   }
 
   @Get('logs/:id')
   @Roles(Role.ADMIN, Role.HR)
-  findMailLogById(@Param('id') id: string) {
-    return this.emailService.findMailLogById(id);
+  findLogById(@Param('id') id: string) {
+    return this.emailService.findLogById(id);
   }
 
   @Get('logs/application/:applicationId')
   @Roles(Role.ADMIN, Role.HR)
-  findMailLogsByApplicationId(@Param('applicationId') applicationId: string) {
-    return this.emailService.findMailLogsByApplicationId(applicationId);
+  findLogsByApplication(@Param('applicationId') applicationId: string) {
+    return this.emailService.findLogsByApplication(applicationId);
   }
 
   @Delete('logs/:id')
@@ -97,5 +100,56 @@ export class EmailController {
       data.context,
       data.createdBy,
     );
+  }
+
+  @Post('send-notification/single')
+  @Roles(Role.ADMIN, Role.HR)
+  async sendSingleNotification(
+    @Body() dto: SendSingleNotificationDto,
+    @Request() req,
+  ) {
+    try {
+      const result = await this.emailService.sendSingleNotification(
+        dto,
+        req.user.userId,
+      );
+      return { success: true, mailLog: result };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Post('send-notification/bulk')
+  @Roles(Role.ADMIN, Role.HR)
+  async sendBulkNotifications(
+    @Body() dto: SendBulkNotificationDto,
+    @Request() req,
+  ) {
+    try {
+      const result = await this.emailService.sendBulkNotifications(
+        dto,
+        req.user.userId,
+      );
+      return {
+        success: true,
+        successCount: result.successful,
+        failedApplications: result.failed,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Get('preview/:applicationId/:templateId')
+  @Roles(Role.ADMIN, Role.HR)
+  async previewEmail(
+    @Param('applicationId') applicationId: string,
+    @Param('templateId') templateId: string,
+  ) {
+    try {
+      return await this.emailService.previewEmail(applicationId, templateId);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }
