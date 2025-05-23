@@ -1,4 +1,11 @@
-import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class SendSingleNotificationDto {
   @IsNotEmpty()
@@ -12,6 +19,10 @@ export class SendSingleNotificationDto {
   @IsOptional()
   @IsBoolean()
   markAsSent?: boolean;
+
+  @IsOptional()
+  @IsString()
+  userId?: string;
 }
 
 export class SendBulkNotificationDto {
@@ -26,4 +37,8 @@ export class SendBulkNotificationDto {
   @IsOptional()
   @IsBoolean()
   markAsSent?: boolean;
-} 
+
+  @IsOptional()
+  @IsString()
+  userId?: string;
+}

@@ -124,9 +124,12 @@ export class EmailController {
     @Request() req,
   ) {
     try {
+      // Get userId from request body or use default
+      const userId = dto.userId || '8318d00a-853d-48b2-a1eb-92f09ee2bcb0';
+
       const result = await this.emailService.sendSingleNotification(
         dto,
-        req.user.userId,
+        userId,
       );
       return { success: true, mailLog: result };
     } catch (error) {
@@ -142,10 +145,10 @@ export class EmailController {
     @Request() req,
   ) {
     try {
-      const result = await this.emailService.sendBulkNotifications(
-        dto,
-        req.user.userId,
-      );
+      // Get userId from request body or use default
+      const userId = dto.userId || '8318d00a-853d-48b2-a1eb-92f09ee2bcb0';
+
+      const result = await this.emailService.sendBulkNotifications(dto, userId);
       return {
         success: true,
         successCount: result.successful,
