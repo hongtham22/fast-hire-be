@@ -32,7 +32,7 @@ export class EmailQueueProcessor {
   async handleSendEmail(job: Job<any>) {
     try {
       this.logger.log(`Processing email job ${job.id}`);
-      const { to, subject, html, mailLogDto } = job.data;
+      const { to, subject, html } = job.data;
 
       // Send the email
       await this.transporter.sendMail({
@@ -45,16 +45,8 @@ export class EmailQueueProcessor {
       // Log success
       this.logger.log(`Email sent successfully to ${to}`);
 
-      // Update mail log status if needed
-      if (mailLogDto && mailLogDto.id) {
-        const mailLog = await this.mailLogRepository.findOne({
-          where: { id: mailLogDto.id }
-        });
-        if (mailLog) {
-          mailLog.status = 'sent';
-          await this.mailLogRepository.save(mailLog);
-        }
-      }
+      // Note: We don't update the MailLog status here since it doesn't have a status field
+      // The application's email_sent field is updated in the EmailService
 
       return true;
     } catch (error) {
@@ -62,4 +54,4 @@ export class EmailQueueProcessor {
       throw error;
     }
   }
-} 
+}
