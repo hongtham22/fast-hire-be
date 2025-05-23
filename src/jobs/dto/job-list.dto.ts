@@ -3,7 +3,7 @@ import { JobStatus } from '../job.entity';
 export class JobListItemDto {
   id: string;
   jobTitle: string;
-  department: string;
+  location: string;
   applicationCount: number;
   status: JobStatus;
   expireDate: Date | null;

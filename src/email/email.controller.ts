@@ -13,38 +13,46 @@ import {
 import { EmailService } from './email.service';
 import { CreateEmailTemplateDto } from './dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from './dto/update-email-template.dto';
+import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/enums/role.enum';
 import { RolesGuard } from '@/auth/guards/roles.guard';
-import { SendSingleNotificationDto, SendBulkNotificationDto } from './dto/send-notification.dto';
+import {
+  SendBulkNotificationDto,
+  SendSingleNotificationDto,
+} from '@/email/dto/send-notification.dto';
 
 @Controller('email')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 export class EmailController {
   constructor(private readonly emailService: EmailService) {}
 
   // Email templates endpoints
   @Get('templates')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   findAllTemplates() {
     return this.emailService.findAllTemplates();
   }
 
   @Get('templates/:id')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   findTemplateById(@Param('id') id: string) {
     return this.emailService.findTemplateById(id);
   }
 
   @Post('templates')
-  @Roles(Role.ADMIN)
+  // @Roles(Role.ADMIN)
+  @Public()
   createTemplate(@Body() createEmailTemplateDto: CreateEmailTemplateDto) {
     return this.emailService.createTemplate(createEmailTemplateDto);
   }
 
   @Put('templates/:id')
-  @Roles(Role.ADMIN)
+  // @Roles(Role.ADMIN)
+  @Public()
   updateTemplate(
     @Param('id') id: string,
     @Body() updateEmailTemplateDto: UpdateEmailTemplateDto,
@@ -53,38 +61,44 @@ export class EmailController {
   }
 
   @Delete('templates/:id')
-  @Roles(Role.ADMIN)
+  // @Roles(Role.ADMIN)
+  @Public()
   removeTemplate(@Param('id') id: string) {
-    return this.emailService.removeTemplate(id);
+    return this.emailService.deleteTemplate(id);
   }
 
   // Mail logs endpoints
   @Get('logs')
-  @Roles(Role.ADMIN, Role.HR)
-  findAllLogs() {
-    return this.emailService.findAllLogs();
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
+  findAllMailLogs() {
+    return this.emailService.findAllMailLogs();
   }
 
   @Get('logs/:id')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   findLogById(@Param('id') id: string) {
-    return this.emailService.findLogById(id);
+    return this.emailService.findMailLogById(id);
   }
 
   @Get('logs/application/:applicationId')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   findLogsByApplication(@Param('applicationId') applicationId: string) {
-    return this.emailService.findLogsByApplication(applicationId);
+    return this.emailService.findMailLogsByApplicationId(applicationId);
   }
 
   @Delete('logs/:id')
-  @Roles(Role.ADMIN)
+  // @Roles(Role.ADMIN)
+  @Public()
   deleteMailLog(@Param('id') id: string) {
     return this.emailService.deleteMailLog(id);
   }
 
   @Post('send-application-email')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   sendApplicationEmail(
     @Body()
     data: {
@@ -103,7 +117,8 @@ export class EmailController {
   }
 
   @Post('send-notification/single')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   async sendSingleNotification(
     @Body() dto: SendSingleNotificationDto,
     @Request() req,
@@ -120,7 +135,8 @@ export class EmailController {
   }
 
   @Post('send-notification/bulk')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   async sendBulkNotifications(
     @Body() dto: SendBulkNotificationDto,
     @Request() req,
@@ -141,7 +157,8 @@ export class EmailController {
   }
 
   @Get('preview/:applicationId/:templateId')
-  @Roles(Role.ADMIN, Role.HR)
+  // @Roles(Role.ADMIN, Role.HR)
+  @Public()
   async previewEmail(
     @Param('applicationId') applicationId: string,
     @Param('templateId') templateId: string,

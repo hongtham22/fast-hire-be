@@ -9,7 +9,10 @@ import { CreateMailLogDto } from './dto/create-mail-log.dto';
 import { CreateEmailTemplateDto } from './dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from './dto/update-email-template.dto';
 import { Application } from '@/applications/application.entity';
-import { SendSingleNotificationDto, SendBulkNotificationDto } from './dto/send-notification.dto';
+import {
+  SendSingleNotificationDto,
+  SendBulkNotificationDto,
+} from './dto/send-notification.dto';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 
@@ -101,19 +104,20 @@ export class EmailService {
   }
 
   // Template rendering
+
   renderTemplate(template: string, context: Record<string, any>): string {
     return template.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
       const keys = key.trim().split('.');
       let value = context;
-      
+
       for (const k of keys) {
         if (value === undefined || value === null) {
           return '';
         }
         value = value[k];
       }
-      
-      return value !== undefined && value !== null ? value : '';
+
+      return value !== undefined && value !== null ? String(value) : '';
     });
   }
 
@@ -206,25 +210,28 @@ export class EmailService {
   /**
    * Send notification email to a single application
    */
-  async sendSingleNotification(dto: SendSingleNotificationDto, userId: string): Promise<MailLog> {
+  async sendSingleNotification(
+    dto: SendSingleNotificationDto,
+    userId: string,
+  ): Promise<MailLog> {
     const { applicationId, templateId, markAsSent = true } = dto;
-    
+
     // Get application with all necessary relations
     const application = await this.applicationRepository.findOne({
       where: { id: applicationId },
-      relations: ['applicant', 'job'],
+      relations: ['applicant', 'job', 'job.location'],
     });
-    
+
     if (!application) {
       throw new Error(`Application with ID ${applicationId} not found`);
     }
-    
+
     // Get the template
     const template = await this.findTemplateById(templateId);
     if (!template) {
       throw new Error(`Email template with ID ${templateId} not found`);
     }
-    
+
     // Prepare context for template rendering
     const context = {
       applicant: {
@@ -233,18 +240,23 @@ export class EmailService {
       },
       job: {
         title: application.job.jobTitle,
-        department: application.job.department,
+        location: application.job.location?.name || 'Not specified',
       },
       application: {
-        result: application.result === true ? 'Accepted' : application.result === false ? 'Rejected' : 'Pending',
+        result:
+          application.result === true
+            ? 'Accepted'
+            : application.result === false
+              ? 'Rejected'
+              : 'Pending',
         note: application.note || '',
       },
     };
-    
+
     // Render the template
     const subject = this.renderTemplate(template.subject_template, context);
     const message = this.renderTemplate(template.body_template, context);
-    
+
     // Create a mail log entry
     const mailLogDto: CreateMailLogDto = {
       applicationId,
@@ -253,7 +265,7 @@ export class EmailService {
       message,
       createdBy: userId,
     };
-    
+
     // Add to queue for sending
     await this.emailQueue.add('send-email', {
       to: application.applicant.email,
@@ -261,13 +273,13 @@ export class EmailService {
       html: message,
       mailLogDto,
     });
-    
+
     // Update application if markAsSent is true
     if (markAsSent) {
       application.emailSent = true;
       await this.applicationRepository.save(application);
     }
-    
+
     // Save the log
     return this.createMailLog(mailLogDto);
   }
@@ -275,34 +287,37 @@ export class EmailService {
   /**
    * Send notification emails to multiple applications
    */
-  async sendBulkNotifications(dto: SendBulkNotificationDto, userId: string): Promise<{ successful: number; failed: string[] }> {
+  async sendBulkNotifications(
+    dto: SendBulkNotificationDto,
+    userId: string,
+  ): Promise<{ successful: number; failed: string[] }> {
     const { applicationIds, templateId, markAsSent = true } = dto;
-    
+
     // Get the template
     const template = await this.findTemplateById(templateId);
     if (!template) {
       throw new Error(`Email template with ID ${templateId} not found`);
     }
-    
+
     const results = {
       successful: 0,
       failed: [] as string[],
     };
-    
+
     // Process each application
     for (const applicationId of applicationIds) {
       try {
         // Get application with necessary relations
         const application = await this.applicationRepository.findOne({
           where: { id: applicationId },
-          relations: ['applicant', 'job'],
+          relations: ['applicant', 'job', 'job.location'],
         });
-        
+
         if (!application) {
           results.failed.push(`Application with ID ${applicationId} not found`);
           continue;
         }
-        
+
         // Prepare context for template rendering
         const context = {
           applicant: {
@@ -311,18 +326,23 @@ export class EmailService {
           },
           job: {
             title: application.job.jobTitle,
-            department: application.job.department,
+            location: application.job.location?.name || 'Not specified',
           },
           application: {
-            result: application.result === true ? 'Accepted' : application.result === false ? 'Rejected' : 'Pending',
+            result:
+              application.result === true
+                ? 'Accepted'
+                : application.result === false
+                  ? 'Rejected'
+                  : 'Pending',
             note: application.note || '',
           },
         };
-        
+
         // Render the template
         const subject = this.renderTemplate(template.subject_template, context);
         const message = this.renderTemplate(template.body_template, context);
-        
+
         // Create a mail log entry
         const mailLogDto: CreateMailLogDto = {
           applicationId,
@@ -331,7 +351,7 @@ export class EmailService {
           message,
           createdBy: userId,
         };
-        
+
         // Add to queue for sending
         await this.emailQueue.add('send-email', {
           to: application.applicant.email,
@@ -339,46 +359,52 @@ export class EmailService {
           html: message,
           mailLogDto,
         });
-        
+
         // Update application if markAsSent is true
         if (markAsSent) {
           application.emailSent = true;
           await this.applicationRepository.save(application);
         }
-        
+
         // Save the log
         await this.createMailLog(mailLogDto);
-        
+
         results.successful++;
       } catch (error) {
-        console.error(`Failed to send email for application ${applicationId}:`, error);
+        console.error(
+          `Failed to send email for application ${applicationId}:`,
+          error,
+        );
         results.failed.push(`Application ${applicationId}: ${error.message}`);
       }
     }
-    
+
     return results;
   }
 
   /**
    * Preview an email template with application context
    */
-  async previewEmail(applicationId: string, templateId: string): Promise<{ subject: string; body: string }> {
+  async previewEmail(
+    applicationId: string,
+    templateId: string,
+  ): Promise<{ subject: string; body: string }> {
     // Get application with all necessary relations
     const application = await this.applicationRepository.findOne({
       where: { id: applicationId },
-      relations: ['applicant', 'job'],
+      relations: ['applicant', 'job', 'job.location'],
     });
-    
+
     if (!application) {
       throw new Error(`Application with ID ${applicationId} not found`);
     }
-    
+
     // Get the template
     const template = await this.findTemplateById(templateId);
     if (!template) {
       throw new Error(`Email template with ID ${templateId} not found`);
     }
-    
+
     // Prepare context for template rendering
     const context = {
       applicant: {
@@ -387,18 +413,23 @@ export class EmailService {
       },
       job: {
         title: application.job.jobTitle,
-        department: application.job.department,
+        location: application.job.location?.name || 'Not specified',
       },
       application: {
-        result: application.result === true ? 'Accepted' : application.result === false ? 'Rejected' : 'Pending',
+        result:
+          application.result === true
+            ? 'Accepted'
+            : application.result === false
+              ? 'Rejected'
+              : 'Pending',
         note: application.note || '',
       },
     };
-    
+
     // Render the template
     const subject = this.renderTemplate(template.subject_template, context);
     const body = this.renderTemplate(template.body_template, context);
-    
+
     return { subject, body };
   }
 }

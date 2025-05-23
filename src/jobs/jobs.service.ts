@@ -195,7 +195,7 @@ export class JobsService {
       return {
         id: job.id,
         jobTitle: job.jobTitle,
-        department: job.location?.name || 'General',
+        location: job.location?.name || 'General',
         applicationCount,
         status: job.status,
         expireDate: job.expireDate,
