@@ -30,6 +30,7 @@ import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { CvProcessingModule } from './cv-processing/cv-processing.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
+import { AuthModule } from '@/auth/auth.module';
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
     JdKeywordsModule,
     CvProcessingModule,
     ScheduledTasksModule,
+    AuthModule,
   ],
   controllers: [AppController, UploadsController],
   providers: [

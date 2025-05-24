@@ -19,12 +19,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    try {
-      return super.canActivate(context);
-    } catch (error) {
-      // Temporarily allow all requests when JWT strategy is not available
-      console.warn('JWT authentication error:', error.message);
-      return true; // Added temporarily for testing
-    }
+    return super.canActivate(context);
   }
 }

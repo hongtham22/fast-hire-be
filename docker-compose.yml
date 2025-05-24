@@ -20,6 +20,7 @@ services:
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - EMAIL_FROM=${EMAIL_FROM}
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
