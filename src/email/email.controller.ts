@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { CreateEmailTemplateDto } from './dto/create-email-template.dto';
@@ -94,6 +95,12 @@ export class EmailController {
   @Public()
   deleteMailLog(@Param('id') id: string) {
     return this.emailService.deleteMailLog(id);
+  }
+
+  @Delete('logs')
+  @Public()
+  deleteAllMailLogs(@Query('applicationId') applicationId?: string) {
+    return this.emailService.deleteMailLogs(applicationId);
   }
 
   @Post('send-application-email')

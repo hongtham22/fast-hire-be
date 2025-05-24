@@ -124,6 +124,17 @@ export class ApplicationsController {
     return this.applicationsService.deleteAll(deleteApplicants);
   }
 
+  /**
+   * Delete a specific application by ID
+   */
+  @Delete(':id')
+  @Public()
+  async deleteApplication(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.applicationsService.deleteApplication(id);
+  }
+
   @Post(':jobId/applications/:applicationId/evaluate')
   @Public()
   async evaluateApplication(

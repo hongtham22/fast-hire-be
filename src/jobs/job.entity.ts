@@ -67,6 +67,31 @@ export class Job {
   @Column({ name: 'close_reason', nullable: true })
   closeReason: 'manual' | 'expired' | null;
 
+  // Custom max scores for each matching criterion
+  @Column({ name: 'max_score_role_job', type: 'int', default: 10 })
+  maxScoreRoleJob: number;
+
+  @Column({ name: 'max_score_experience_years', type: 'int', default: 15 })
+  maxScoreExperienceYears: number;
+
+  @Column({ name: 'max_score_programming_language', type: 'int', default: 15 })
+  maxScoreProgrammingLanguage: number;
+
+  @Column({ name: 'max_score_key_responsibilities', type: 'int', default: 15 })
+  maxScoreKeyResponsibilities: number;
+
+  @Column({ name: 'max_score_certificate', type: 'int', default: 10 })
+  maxScoreCertificate: number;
+
+  @Column({ name: 'max_score_language', type: 'int', default: 10 })
+  maxScoreLanguage: number;
+
+  @Column({ name: 'max_score_soft_skill', type: 'int', default: 10 })
+  maxScoreSoftSkill: number;
+
+  @Column({ name: 'max_score_technical_skill', type: 'int', default: 15 })
+  maxScoreTechnicalSkill: number;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   creator: User;

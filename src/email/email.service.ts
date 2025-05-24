@@ -103,6 +103,18 @@ export class EmailService {
     await this.mailLogRepository.delete(id);
   }
 
+  /**
+   * Delete all mail logs or logs for a specific application
+   * @param applicationId Optional: Delete logs only for a specific application
+   */
+  async deleteMailLogs(applicationId?: string): Promise<void> {
+    if (applicationId) {
+      await this.mailLogRepository.delete({ application_id: applicationId });
+    } else {
+      await this.mailLogRepository.delete({});
+    }
+  }
+
   // Template rendering
 
   renderTemplate(template: string, context: Record<string, any>): string {

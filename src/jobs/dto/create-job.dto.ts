@@ -5,8 +5,11 @@ import {
   IsString,
   IsNumber,
   IsEnum,
+  Min,
+  Max,
 } from 'class-validator';
 import { JobStatus } from '../job.entity';
+import { Type } from 'class-transformer';
 
 export class CreateJobDto {
   @IsNotEmpty()
@@ -48,4 +51,61 @@ export class CreateJobDto {
   @IsOptional()
   @IsString()
   expireDate: string;
+
+  // Custom max scores for matching
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreRoleJob: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreExperienceYears: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreProgrammingLanguage: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreKeyResponsibilities: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreCertificate: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreLanguage: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreSoftSkill: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  maxScoreTechnicalSkill: number;
 }

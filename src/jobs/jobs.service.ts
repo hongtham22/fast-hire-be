@@ -1,4 +1,9 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Not, IsNull } from 'typeorm';
 import { Job, JobStatus } from './job.entity';
@@ -9,6 +14,8 @@ import { JDKeywordCategory } from '../jd_keywords/jd-keyword-category.entity';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import axios from 'axios';
+import { EmailService } from '../email/email.service';
+import { Application } from '../applications/application.entity';
 
 @Injectable()
 export class JobsService {
@@ -21,6 +28,9 @@ export class JobsService {
     private readonly jdCategoryRepository: Repository<JDCategory>,
     @InjectRepository(JDKeywordCategory)
     private readonly jdKeywordCategoryRepository: Repository<JDKeywordCategory>,
+    @InjectRepository(Application)
+    private readonly applicationRepository: Repository<Application>,
+    private readonly emailService: EmailService,
     private dataSource: DataSource,
   ) {}
 
@@ -43,37 +53,90 @@ export class JobsService {
   }
 
   /**
+   * Validate max scores total equals 100
+   * @param jobData Job data with max scores
+   * @throws Error if total max score is not 100
+   */
+  private validateMaxScores(jobData: CreateJobDto | UpdateJobDto): void {
+    // Check if any max score fields are provided
+    const hasMaxScores = [
+      'maxScoreRoleJob',
+      'maxScoreExperienceYears',
+      'maxScoreProgrammingLanguage',
+      'maxScoreKeyResponsibilities',
+      'maxScoreCertificate',
+      'maxScoreLanguage',
+      'maxScoreSoftSkill',
+      'maxScoreTechnicalSkill',
+    ].some((field) => field in jobData && jobData[field] !== undefined);
+
+    // If no max scores are provided, no need to validate
+    if (!hasMaxScores) {
+      return;
+    }
+
+    // Get default values from entity
+    const defaultValues = {
+      maxScoreRoleJob: 10,
+      maxScoreExperienceYears: 15,
+      maxScoreProgrammingLanguage: 15,
+      maxScoreKeyResponsibilities: 15,
+      maxScoreCertificate: 10,
+      maxScoreLanguage: 10,
+      maxScoreSoftSkill: 10,
+      maxScoreTechnicalSkill: 15,
+    };
+
+    // Compute the total from provided values or defaults
+    const total = [
+      'maxScoreRoleJob',
+      'maxScoreExperienceYears',
+      'maxScoreProgrammingLanguage',
+      'maxScoreKeyResponsibilities',
+      'maxScoreCertificate',
+      'maxScoreLanguage',
+      'maxScoreSoftSkill',
+      'maxScoreTechnicalSkill',
+    ].reduce((sum, field) => {
+      const value =
+        jobData[field] !== undefined
+          ? Number(jobData[field])
+          : hasMaxScores
+            ? 0
+            : defaultValues[field];
+      return sum + value;
+    }, 0);
+
+    if (Math.round(total) !== 100) {
+      throw new HttpException(
+        `Total max score must be 100. Current total: ${total}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  /**
    * Create a new job with default HR user
-   * @param createJobDto - The DTO with job information
+   * @param createJobDto - Data for creating a job
    * @returns The created job
    */
   async createWithDefaultHR(createJobDto: CreateJobDto): Promise<Job> {
     try {
-      // Get the default HR user
-      const hrUser = await this.dataSource.query(
-        `SELECT id FROM users WHERE email = 'hr@fasthire.com' LIMIT 1`,
-      );
+      // Validate max scores
+      this.validateMaxScores(createJobDto);
 
-      if (!hrUser || hrUser.length === 0) {
-        throw new HttpException(
-          'Default HR user not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      // Add the createdBy field to the DTO
-      const jobData = {
+      // Create job with default HR user ID
+      const job = this.jobRepository.create({
         ...createJobDto,
-        createdBy: hrUser[0].id,
-      };
+        createdBy: '8318d00a-853d-48b2-a1eb-92f09ee2bcb0', // Hard-coded HR user ID
+      });
 
-      const job = this.jobRepository.create(jobData);
-      return await this.jobRepository.save(job);
+      return this.jobRepository.save(job);
     } catch (error) {
       console.error('Error creating job with default HR:', error);
       throw new HttpException(
-        `Failed to create job: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        error.message || 'Failed to create job',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -250,11 +313,30 @@ export class JobsService {
       return null;
     }
 
+    // Get the job to access max scores
+    const job = await this.jobRepository.findOne({
+      where: { id: jobId },
+    });
+
     // Restructure data to match the expected format in the frontend
     const result = {};
 
     for (const category of jdKeyword.categories) {
       result[category.category.name] = category.value;
+    }
+
+    // Add custom max scores from the job table
+    if (job) {
+      result['custom_max_scores'] = {
+        role_job: job.maxScoreRoleJob,
+        experience_years: job.maxScoreExperienceYears,
+        programming_language: job.maxScoreProgrammingLanguage,
+        key_responsibilities: job.maxScoreKeyResponsibilities,
+        certificate: job.maxScoreCertificate,
+        language: job.maxScoreLanguage,
+        soft_skill: job.maxScoreSoftSkill,
+        technical_skill: job.maxScoreTechnicalSkill,
+      };
     }
 
     return result;
@@ -474,7 +556,7 @@ export class JobsService {
   }
 
   /**
-   * Delete a job and all of its related JD keywords
+   * Delete a job and all of its related data (applications, JD keywords, etc.)
    * @param jobId - The ID of the job to delete
    * @returns Message indicating successful deletion
    */
@@ -494,6 +576,24 @@ export class JobsService {
         throw new HttpException(
           `Job with ID ${jobId} not found`,
           HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Find all applications for this job
+      const applications = await this.applicationRepository.find({
+        where: { jobId },
+      });
+
+      // Delete mail logs for all applications
+      for (const application of applications) {
+        await this.emailService.deleteMailLogs(application.id);
+      }
+
+      // Delete all applications for this job
+      if (applications.length > 0) {
+        await queryRunner.manager.delete(
+          Application,
+          applications.map((app) => app.id),
         );
       }
 
@@ -542,36 +642,37 @@ export class JobsService {
 
   /**
    * Update a job
-   * @param id - The ID of the job to update
-   * @param updateJobDto - The DTO with updated job information
+   * @param id - ID of the job to update
+   * @param updateJobDto - Data for updating the job
    * @returns The updated job
    */
-  async update(id: string, updateJobDto: UpdateJobDto): Promise<Job | null> {
+  async update(id: string, updateJobDto: UpdateJobDto): Promise<Job> {
     try {
-      // First check if job exists
-      const job = await this.jobRepository.findOne({
+      // Check if job exists
+      const existingJob = await this.jobRepository.findOne({
         where: { id },
-        relations: ['location', 'creator'],
       });
 
-      if (!job) {
-        return null;
+      if (!existingJob) {
+        throw new NotFoundException(`Job with ID ${id} not found`);
       }
 
-      // Update job with new data
-      Object.assign(job, updateJobDto);
+      // Validate max scores
+      this.validateMaxScores(updateJobDto);
 
-      // If status is being updated to pending, ensure it's set
-      if (updateJobDto.status) {
-        job.status = updateJobDto.status;
-      }
+      // Update the job
+      await this.jobRepository.update(id, updateJobDto);
 
-      return await this.jobRepository.save(job);
+      // Return the updated job
+      return this.jobRepository.findOne({
+        where: { id },
+        relations: ['location'],
+      });
     } catch (error) {
       console.error(`Error updating job with ID ${id}:`, error);
       throw new HttpException(
-        `Failed to update job: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        error.message || `Failed to update job with ID ${id}`,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

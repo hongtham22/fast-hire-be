@@ -277,6 +277,9 @@ export class ApplicationsService {
    * @param deleteApplicants If true, all applicants will also be deleted
    */
   async deleteAll(deleteApplicants = false): Promise<void> {
+    // First, delete all mail logs that reference applications
+    await this.emailService.deleteMailLogs();
+
     // Delete all applications
     // Due to cascade relationships set in the entities, this will also:
     // - Delete all cv_keywords related to applications
@@ -290,6 +293,18 @@ export class ApplicationsService {
     if (deleteApplicants) {
       await this.applicantsService.deleteAll();
     }
+  }
+
+  /**
+   * Delete a specific application by ID
+   * @param id Application ID to delete
+   */
+  async deleteApplication(id: string): Promise<void> {
+    // First delete any mail logs for this application
+    await this.emailService.deleteMailLogs(id);
+
+    // Then delete the application
+    await this.applicationRepository.delete(id);
   }
 
   async evaluateApplication(
