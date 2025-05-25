@@ -17,8 +17,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/enums/role.enum';
 import { Public } from '../auth/decorators/public.decorator';
 @Controller('locations')
-// @Public()
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 

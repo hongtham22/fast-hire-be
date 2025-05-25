@@ -11,6 +11,7 @@ import {
   Body,
   Delete,
   Put,
+  Request,
 } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -21,8 +22,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JobStatus } from './job.entity';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { Role } from '../users/enums/role.enum';
 
 @Controller('jobs')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
@@ -33,7 +36,7 @@ export class JobsController {
   }
 
   @Get('open')
-  @Public() // Mark this endpoint as public
+  @Public()
   async findOpenJobs(
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
@@ -50,10 +53,7 @@ export class JobsController {
   }
 
   @Get('hr/all')
-  @Public() // Mark this endpoint as public
-
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(UserRole.HR, UserRole.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   async findAllJobsForHR(
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
@@ -79,7 +79,7 @@ export class JobsController {
   }
 
   @Get(':id/keywords')
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async getJobKeywords(@Param('id', ParseUUIDPipe) id: string) {
     const keywords = await this.jobsService.getJDKeywords(id);
     if (!keywords) {
@@ -89,10 +89,16 @@ export class JobsController {
   }
 
   @Post('create-with-keywords')
-  @Public() // For testing purposes, consider adding proper auth guards
-  async createJobWithKeywords(@Body() createJobDto: CreateJobDto) {
-    // First create the job with default HR user
-    const job = await this.jobsService.createWithDefaultHR(createJobDto);
+  @Roles(Role.ADMIN, Role.HR)
+  async createJobWithKeywords(
+    @Body() createJobDto: CreateJobDto,
+    @Request() req,
+  ) {
+    // First create the job with authenticated user
+    const job = await this.jobsService.createWithAuthenticatedUser(
+      createJobDto,
+      req.user.id,
+    );
 
     // Then extract and store keywords
     await this.jobsService.extractAndStoreJDKeywords(job.id);
@@ -101,25 +107,25 @@ export class JobsController {
   }
 
   @Post(':id/extract-keywords')
-  @Public() // For testing purposes, consider adding proper auth guards
+  @Roles(Role.ADMIN, Role.HR)
   async extractJobKeywords(@Param('id', ParseUUIDPipe) id: string) {
     return this.jobsService.extractAndStoreJDKeywords(id);
   }
 
   @Post('process-all-keywords')
-  @Public() // For testing purposes, consider adding proper auth guards
+  @Roles(Role.ADMIN, Role.HR)
   async processAllJobKeywords() {
     return this.jobsService.processAllJobsForKeywords();
   }
 
   @Delete(':id')
-  @Public() // For testing purposes, consider adding proper auth guards later
+  @Roles(Role.ADMIN, Role.HR)
   async deleteJob(@Param('id', ParseUUIDPipe) id: string) {
     return this.jobsService.deleteJobWithKeywords(id);
   }
 
   @Put(':id')
-  @Public() // For testing purposes, consider adding proper auth guards later
+  @Roles(Role.ADMIN, Role.HR)
   async updateJob(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateJobDto: UpdateJobDto,
@@ -138,10 +144,10 @@ export class JobsController {
    * @returns The closed job
    */
   @Post(':id/close')
-  @Public() // For testing purposes, consider adding proper auth guards later
+  @Roles(Role.ADMIN, Role.HR)
   async closeJob(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { closeReason: 'manual' | 'expired' }
+    @Body() body: { closeReason: 'manual' | 'expired' },
   ) {
     return this.jobsService.closeJob(id, body.closeReason || 'manual');
   }

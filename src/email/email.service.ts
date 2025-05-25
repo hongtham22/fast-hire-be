@@ -8,7 +8,7 @@ import { MailLog } from './entities/mail-log.entity';
 import { CreateMailLogDto } from './dto/create-mail-log.dto';
 import { CreateEmailTemplateDto } from './dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from './dto/update-email-template.dto';
-import { Application } from '@/applications/application.entity';
+import { Application } from '../applications/application.entity';
 import {
   SendSingleNotificationDto,
   SendBulkNotificationDto,

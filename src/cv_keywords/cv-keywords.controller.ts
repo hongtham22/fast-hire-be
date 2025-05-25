@@ -4,18 +4,23 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
 import { CVKeywordsService } from './cv-keywords.service';
-import { Public } from '../auth/decorators/public.decorator';
+import { Role } from '@/users/enums/role.enum';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { Roles } from '@/auth/decorators/roles.decorator';
 
 @Controller('cv-keywords')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CVKeywordsController {
   private readonly logger = new Logger(CVKeywordsController.name);
 
   constructor(private readonly cvKeywordsService: CVKeywordsService) {}
 
   @Get('by-application/:applicationId')
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async findByApplicationId(@Param('applicationId') applicationId: string) {
     try {
       const cvKeyword =

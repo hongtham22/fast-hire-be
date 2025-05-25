@@ -14,46 +14,41 @@ import {
 import { EmailService } from './email.service';
 import { CreateEmailTemplateDto } from './dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from './dto/update-email-template.dto';
-import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/enums/role.enum';
-import { RolesGuard } from '@/auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import {
   SendBulkNotificationDto,
   SendSingleNotificationDto,
 } from '@/email/dto/send-notification.dto';
 
 @Controller('email')
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class EmailController {
   constructor(private readonly emailService: EmailService) {}
 
   // Email templates endpoints
   @Get('templates')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   findAllTemplates() {
     return this.emailService.findAllTemplates();
   }
 
   @Get('templates/:id')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   findTemplateById(@Param('id') id: string) {
     return this.emailService.findTemplateById(id);
   }
 
   @Post('templates')
-  // @Roles(Role.ADMIN)
-  @Public()
+  @Roles(Role.ADMIN)
   createTemplate(@Body() createEmailTemplateDto: CreateEmailTemplateDto) {
     return this.emailService.createTemplate(createEmailTemplateDto);
   }
 
   @Put('templates/:id')
-  // @Roles(Role.ADMIN)
-  @Public()
+  @Roles(Role.ADMIN)
   updateTemplate(
     @Param('id') id: string,
     @Body() updateEmailTemplateDto: UpdateEmailTemplateDto,
@@ -62,81 +57,71 @@ export class EmailController {
   }
 
   @Delete('templates/:id')
-  // @Roles(Role.ADMIN)
-  @Public()
+  @Roles(Role.ADMIN)
   removeTemplate(@Param('id') id: string) {
     return this.emailService.deleteTemplate(id);
   }
 
   // Mail logs endpoints
   @Get('logs')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   findAllMailLogs() {
     return this.emailService.findAllMailLogs();
   }
 
   @Get('logs/:id')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   findLogById(@Param('id') id: string) {
     return this.emailService.findMailLogById(id);
   }
 
   @Get('logs/application/:applicationId')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   findLogsByApplication(@Param('applicationId') applicationId: string) {
     return this.emailService.findMailLogsByApplicationId(applicationId);
   }
 
   @Delete('logs/:id')
-  // @Roles(Role.ADMIN)
-  @Public()
+  @Roles(Role.ADMIN)
   deleteMailLog(@Param('id') id: string) {
     return this.emailService.deleteMailLog(id);
   }
 
   @Delete('logs')
-  @Public()
+  @Roles(Role.ADMIN)
   deleteAllMailLogs(@Query('applicationId') applicationId?: string) {
     return this.emailService.deleteMailLogs(applicationId);
   }
 
   @Post('send-application-email')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   sendApplicationEmail(
     @Body()
     data: {
       applicationId: string;
       templateId: string;
       context: Record<string, any>;
-      createdBy: string;
     },
+    @Request() req,
   ) {
     return this.emailService.sendApplicationEmail(
       data.applicationId,
       data.templateId,
       data.context,
-      data.createdBy,
+      req.user.id,
     );
   }
 
   @Post('send-notification/single')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async sendSingleNotification(
     @Body() dto: SendSingleNotificationDto,
     @Request() req,
   ) {
     try {
-      // Get userId from request body or use default
-      const userId = dto.userId || '8318d00a-853d-48b2-a1eb-92f09ee2bcb0';
-
       const result = await this.emailService.sendSingleNotification(
         dto,
-        userId,
+        req.user.id,
       );
       return { success: true, mailLog: result };
     } catch (error) {
@@ -145,17 +130,16 @@ export class EmailController {
   }
 
   @Post('send-notification/bulk')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async sendBulkNotifications(
     @Body() dto: SendBulkNotificationDto,
     @Request() req,
   ) {
     try {
-      // Get userId from request body or use default
-      const userId = dto.userId || '8318d00a-853d-48b2-a1eb-92f09ee2bcb0';
-
-      const result = await this.emailService.sendBulkNotifications(dto, userId);
+      const result = await this.emailService.sendBulkNotifications(
+        dto,
+        req.user.id,
+      );
       return {
         success: true,
         successCount: result.successful,
@@ -167,8 +151,7 @@ export class EmailController {
   }
 
   @Get('preview/:applicationId/:templateId')
-  // @Roles(Role.ADMIN, Role.HR)
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async previewEmail(
     @Param('applicationId') applicationId: string,
     @Param('templateId') templateId: string,

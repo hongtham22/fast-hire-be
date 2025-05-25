@@ -116,24 +116,28 @@ export class JobsService {
   }
 
   /**
-   * Create a new job with default HR user
+   * Create a new job with authenticated user
    * @param createJobDto - Data for creating a job
+   * @param userId - ID of the authenticated user
    * @returns The created job
    */
-  async createWithDefaultHR(createJobDto: CreateJobDto): Promise<Job> {
+  async createWithAuthenticatedUser(
+    createJobDto: CreateJobDto,
+    userId: string,
+  ): Promise<Job> {
     try {
       // Validate max scores
       this.validateMaxScores(createJobDto);
 
-      // Create job with default HR user ID
+      // Create job with authenticated user ID
       const job = this.jobRepository.create({
         ...createJobDto,
-        createdBy: '8318d00a-853d-48b2-a1eb-92f09ee2bcb0', // Hard-coded HR user ID
+        createdBy: userId,
       });
 
       return this.jobRepository.save(job);
     } catch (error) {
-      console.error('Error creating job with default HR:', error);
+      console.error('Error creating job with authenticated user:', error);
       throw new HttpException(
         error.message || 'Failed to create job',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
@@ -214,6 +218,7 @@ export class JobsService {
       .createQueryBuilder('job')
       .leftJoinAndSelect('job.applications', 'application')
       .leftJoinAndSelect('job.location', 'location')
+      .leftJoinAndSelect('job.creator', 'creator')
       .select([
         'job.id',
         'job.jobTitle',
@@ -221,10 +226,14 @@ export class JobsService {
         'job.createdAt',
         'job.expireDate',
         'location.name',
+        'creator.id',
+        'creator.name',
+        'creator.email',
       ])
       .addSelect('COUNT(application.id)', 'applicationCount')
       .groupBy('job.id')
-      .addGroupBy('location.id');
+      .addGroupBy('location.id')
+      .addGroupBy('creator.id');
 
     // Apply status filter if provided
     if (options?.status) {
@@ -263,6 +272,13 @@ export class JobsService {
         status: job.status,
         expireDate: job.expireDate,
         createdAt: job.createdAt,
+        creator: job.creator
+          ? {
+              id: job.creator.id,
+              name: job.creator.name,
+              email: job.creator.email,
+            }
+          : undefined,
       } as JobListItemDto;
     });
 

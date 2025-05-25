@@ -11,6 +11,7 @@ import {
   Delete,
   Query,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApplicationsService } from './applications.service';
@@ -19,8 +20,13 @@ import { Application } from './application.entity';
 import { Public } from '../auth/decorators/public.decorator';
 import { SubmitApplicationDto } from './dto/submit-application.dto';
 import { EvaluateApplicationDto } from './dto/evaluate-application.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../users/enums/role.enum';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('applications')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
 
@@ -65,18 +71,19 @@ export class ApplicationsController {
   }
 
   @Get()
+  @Roles(Role.ADMIN, Role.HR)
   async findAll(): Promise<Application[]> {
     return this.applicationsService.findAll();
   }
 
   @Get(':id')
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Application> {
     return this.applicationsService.findOne(id);
   }
 
   @Get('by-job/:jobId')
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async findByJobId(
     @Param('jobId', ParseUUIDPipe) jobId: string,
   ): Promise<Application[]> {
@@ -84,6 +91,7 @@ export class ApplicationsController {
   }
 
   @Get('by-applicant/:applicantId')
+  @Roles(Role.ADMIN, Role.HR)
   async findByApplicantId(
     @Param('applicantId', ParseUUIDPipe) applicantId: string,
   ): Promise<Application[]> {
@@ -91,7 +99,7 @@ export class ApplicationsController {
   }
 
   @Get(':jobId/applications/:applicationId')
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async findOneByJobAndApplication(
     @Param('jobId', ParseUUIDPipe) jobId: string,
     @Param('applicationId', ParseUUIDPipe) applicationId: string,
@@ -116,7 +124,7 @@ export class ApplicationsController {
    * @param deleteApplicants Optional query param to delete applicants as well
    */
   @Delete('delete-all')
-  @Public()
+  @Roles(Role.ADMIN)
   // @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAll(
     @Query('deleteApplicants') deleteApplicants?: boolean,
@@ -128,7 +136,7 @@ export class ApplicationsController {
    * Delete a specific application by ID
    */
   @Delete(':id')
-  @Public()
+  @Roles(Role.ADMIN, Role.HR)
   async deleteApplication(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
@@ -136,7 +144,7 @@ export class ApplicationsController {
   }
 
   @Post(':jobId/applications/:applicationId/evaluate')
-  @Public()
+  @Roles(Role.HR)
   async evaluateApplication(
     @Param('jobId', ParseUUIDPipe) jobId: string,
     @Param('applicationId', ParseUUIDPipe) applicationId: string,
