@@ -9,6 +9,7 @@ import { CVKeywordsService } from '../cv_keywords/cv-keywords.service';
 import { CvProcessingService } from '../cv-processing/cv-processing.service';
 import { EmailService } from '../email/email.service';
 import { JobsService } from '../jobs/jobs.service';
+import { SpacesService } from '../uploads/spaces.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -20,15 +21,16 @@ export class ApplicationsService {
     private readonly cvProcessingService: CvProcessingService,
     private readonly emailService: EmailService,
     private readonly jobsService: JobsService,
+    private readonly spacesService: SpacesService,
   ) {}
 
   async create(
     createApplicationDto: CreateApplicationDto,
-    cvFilePath: string,
+    cvFileUrl: string,
   ): Promise<Application> {
     const newApplication = this.applicationRepository.create({
       ...createApplicationDto,
-      cvFileUrl: cvFilePath,
+      cvFileUrl: cvFileUrl,
     });
 
     return this.applicationRepository.save(newApplication);
@@ -57,15 +59,18 @@ export class ApplicationsService {
       `Application submission: Using applicant id ${applicant.id}, name: ${applicant.name}, phone: ${applicant.phone}`,
     );
 
-    // 2. Get the CV file path
-    const cvFilePath = cvFile.path;
-    console.log(`Application submission: CV file saved at ${cvFilePath}`);
+    // 2. Upload CV file to Spaces
+    console.log(`Application submission: Uploading CV file to Spaces`);
+    const uploadResult = await this.spacesService.uploadFile(cvFile, 'cvs');
+    const cvFileUrl = uploadResult.url;
+    const cvFileKey = uploadResult.key;
+    console.log(`Application submission: CV file uploaded to ${cvFileUrl}`);
 
     // 3. Create the application
     const newApplication = this.applicationRepository.create({
       applicantId: applicant.id,
       jobId,
-      cvFileUrl: cvFilePath,
+      cvFileUrl: cvFileUrl,
     });
 
     const savedApplication =
@@ -102,7 +107,7 @@ export class ApplicationsService {
       );
       await this.cvProcessingService.addCvProcessingJob(
         savedApplication.id,
-        cvFilePath,
+        cvFileKey,
         jobId,
       );
       console.log(

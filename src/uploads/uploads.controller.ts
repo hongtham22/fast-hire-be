@@ -5,35 +5,30 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { SpacesService } from './spaces.service';
 
 @Controller('uploads')
 export class UploadsController {
-  @Post('cv')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/cvs',
-        filename: (req, file, cb) => {
-          // Format: YYYYMMDD_HHmmss-filename.ext
-          const date = new Date()
-            .toISOString()
-            .replace(/T/, '_')
-            .replace(/\..+/, '')
-            .replace(/[-:]/g, '');
+  constructor(private readonly spacesService: SpacesService) {}
 
-          const filename = file.originalname.replace(/\s+/g, '_');
-          const newFilename = `${date}-${filename}`;
-          cb(null, newFilename);
-        },
-      }),
-    }),
-  )
-  async uploadCV(@UploadedFile() file) {
-    // Return the relative path to save in the database
-    return {
-      filename: file.filename,
-      path: `/uploads/cvs/${file.filename}`, // This path will be saved in cv_file_url
-    };
+  @Post('cv')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCV(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    try {
+      const uploadResult = await this.spacesService.uploadFile(file, 'cvs');
+
+      return {
+        filename: file.originalname,
+        key: uploadResult.key,
+        url: uploadResult.url,
+        path: uploadResult.url, // For backward compatibility with existing code
+      };
+    } catch (error) {
+      throw new Error(`File upload failed: ${error.message}`);
+    }
   }
 }

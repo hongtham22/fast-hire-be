@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
-import { UploadsController } from './uploads/uploads.controller';
 import { EmailModule } from './email/email.module';
 import { EmailTemplate } from './email/entities/email-template.entity';
 import { MailLog } from './email/entities/mail-log.entity';
@@ -31,6 +30,7 @@ import { BullModule } from '@nestjs/bull';
 import { CvProcessingModule } from './cv-processing/cv-processing.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { AuthModule } from './auth/auth.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -90,8 +90,9 @@ import { AuthModule } from './auth/auth.module';
     CvProcessingModule,
     ScheduledTasksModule,
     AuthModule,
+    UploadsModule,
   ],
-  controllers: [AppController, UploadsController],
+  controllers: [AppController],
   providers: [
     AppService,
     {

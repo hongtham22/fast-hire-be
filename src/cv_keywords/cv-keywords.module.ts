@@ -9,6 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Application } from '@/applications/application.entity';
 import { JdKeywordsModule } from '@/jd_keywords/jd-keywords.module';
 import { ApplicationsModule } from '@/applications/applications.module';
+import { UploadsModule } from '@/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ApplicationsModule } from '@/applications/applications.module';
     ]),
     ConfigModule,
     JdKeywordsModule,
+    UploadsModule,
     forwardRef(() => ApplicationsModule),
   ],
   providers: [CVKeywordsService],

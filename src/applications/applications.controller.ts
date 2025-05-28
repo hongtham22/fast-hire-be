@@ -24,11 +24,15 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/enums/role.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { SpacesService } from '../uploads/spaces.service';
 
 @Controller('applications')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ApplicationsController {
-  constructor(private readonly applicationsService: ApplicationsService) {}
+  constructor(
+    private readonly applicationsService: ApplicationsService,
+    private readonly spacesService: SpacesService,
+  ) {}
 
   /**
    * Legacy endpoint, kept for backward compatibility
@@ -44,10 +48,11 @@ export class ApplicationsController {
       throw new BadRequestException('CV file is required');
     }
 
-    // Get the path of the uploaded file (relative to server)
-    const cvFilePath = file.path;
+    // Upload file to Spaces
+    const uploadResult = await this.spacesService.uploadFile(file, 'cvs');
+    const cvFileUrl = uploadResult.url;
 
-    return this.applicationsService.create(createApplicationDto, cvFilePath);
+    return this.applicationsService.create(createApplicationDto, cvFileUrl);
   }
 
   /**

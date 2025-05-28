@@ -5,12 +5,11 @@ import { CVKeyword } from './cv-keyword.entity';
 import { CVKeywordCategory } from './cv-keyword-category.entity';
 import { CVCategory } from './cv-category.entity';
 import { Application } from '../applications/application.entity';
-import * as fs from 'fs';
-import * as path from 'path';
 import axios from 'axios';
 import FormData from 'form-data';
 import { ConfigService } from '@nestjs/config';
 import { JdKeywordsService } from '../jd_keywords/jd-keywords.service';
+import { SpacesService } from '../uploads/spaces.service';
 
 @Injectable()
 export class CVKeywordsService {
@@ -27,29 +26,27 @@ export class CVKeywordsService {
     private applicationRepository: Repository<Application>,
     private configService: ConfigService,
     private jdKeywordsService: JdKeywordsService,
+    private spacesService: SpacesService,
   ) {
     this.flaskApiUrl = this.configService.get<string>('FLASK_API_URL');
   }
 
   /**
    * Process a CV file and match it against a job's keywords
+   * cvFileKey is now the Spaces key instead of local file path
    */
   async processCV(
     applicationId: string,
-    cvFilePath: string,
+    cvFileKey: string,
     jobId: string,
   ): Promise<CVKeyword> {
     try {
-      if (!fs.existsSync(cvFilePath)) {
-        throw new HttpException(`CV file not found`, HttpStatus.NOT_FOUND);
-      }
-
       console.log(
-        `Processing CV for application ${applicationId}, job ${jobId}`,
+        `Processing CV for application ${applicationId}, job ${jobId}, file key: ${cvFileKey}`,
       );
 
-      // Prepare and send request to Flask API
-      const response = await this.sendMatchingRequest(cvFilePath, jobId);
+      // Prepare and send request to Flask API with file URL
+      const response = await this.sendMatchingRequest(cvFileKey, jobId);
 
       // Create CV keyword record and update application with response data
       return this.saveMatchingResult(applicationId, response);
@@ -61,41 +58,57 @@ export class CVKeywordsService {
 
   /**
    * Send CV matching request to Flask API
+   * Now works with file URL from Spaces instead of local file
    */
-  private async sendMatchingRequest(cvFilePath: string, jobId: string) {
-    // Prepare form-data for Flask
-    const formData = new FormData();
-    formData.append('cv_file', fs.createReadStream(cvFilePath), {
-      filename: path.basename(cvFilePath),
-      filepath: cvFilePath,
-    });
+  private async sendMatchingRequest(cvFileKey: string, jobId: string) {
+    try {
+      // Construct the full URL for the file in Spaces
+      const cvFileUrl = this.spacesService.getFileUrl(cvFileKey);
+      console.log(`Downloading CV file from Spaces: ${cvFileUrl}`);
 
-    const jdKeywords = await this.getJobKeywords(jobId);
-    if (!jdKeywords) {
-      console.warn(`No JD keywords found for job ${jobId}, using empty object`);
-      // Instead of throwing an error, use an empty object to continue the process
-      formData.append('job_id', jobId);
-      formData.append('jd_keywords', JSON.stringify({}));
-    } else {
-      formData.append('job_id', jobId);
-      formData.append('jd_keywords', JSON.stringify(jdKeywords));
+      // Download the file from Spaces
+      const fileResponse = await axios.get(cvFileUrl, {
+        responseType: 'stream',
+      });
+
+      // Prepare form-data for Flask
+      const formData = new FormData();
+      formData.append('cv_file', fileResponse.data, {
+        filename: cvFileKey.split('/').pop() || 'cv.pdf',
+        contentType: fileResponse.headers['content-type'] || 'application/pdf',
+      });
+
+      const jdKeywords = await this.getJobKeywords(jobId);
+      if (!jdKeywords) {
+        console.warn(
+          `No JD keywords found for job ${jobId}, using empty object`,
+        );
+        formData.append('job_id', jobId);
+        formData.append('jd_keywords', JSON.stringify({}));
+      } else {
+        formData.append('job_id', jobId);
+        formData.append('jd_keywords', JSON.stringify(jdKeywords));
+      }
+
+      console.log(
+        `Sending request to Flask API: ${this.flaskApiUrl}/match-cv-jd`,
+      );
+
+      const { data } = await axios.post(
+        `${this.flaskApiUrl}/match-cv-jd`,
+        formData,
+        { headers: formData.getHeaders() },
+      );
+
+      console.log(`Received response from Flask API`, {
+        data,
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error in sendMatchingRequest:', error);
+      throw new Error(`Failed to process CV from Spaces: ${error.message}`);
     }
-
-    console.log(
-      `Sending request to Flask API: ${this.flaskApiUrl}/match-cv-jd`,
-    );
-
-    const { data } = await axios.post(
-      `${this.flaskApiUrl}/match-cv-jd`,
-      formData,
-      { headers: formData.getHeaders() },
-    );
-
-    console.log(`Received response from Flask API`, {
-      data,
-    });
-
-    return data;
   }
 
   /**

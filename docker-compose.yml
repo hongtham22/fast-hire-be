@@ -21,10 +21,15 @@ services:
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - EMAIL_FROM=${EMAIL_FROM}
       - JWT_SECRET=${JWT_SECRET}
+      - FLASK_API_URL=${FLASK_API_URL}
+      - DO_SPACES_ENDPOINT=${DO_SPACES_ENDPOINT}
+      - DO_SPACES_KEY=${DO_SPACES_KEY}
+      - DO_SPACES_SECRET=${DO_SPACES_SECRET}
+      - DO_SPACES_BUCKET=${DO_SPACES_BUCKET}
+      - DO_SPACES_REGION=${DO_SPACES_REGION}
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
-      - ./uploads:/usr/src/app/uploads
     depends_on:
       - db
       - redis
