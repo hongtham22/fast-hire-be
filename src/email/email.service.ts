@@ -31,14 +31,37 @@ export class EmailService {
     @InjectQueue('email-queue')
     private readonly emailQueue: Queue,
   ) {
-    this.transporter = nodemailer.createTransport({
+    const emailConfig = {
       host: this.configService.get('EMAIL_HOST'),
-      port: this.configService.get('EMAIL_PORT'),
+      port: parseInt(this.configService.get('EMAIL_PORT')) || 587,
       secure: this.configService.get('EMAIL_SECURE') === 'true',
       auth: {
         user: this.configService.get('EMAIL_USER'),
         pass: this.configService.get('EMAIL_PASSWORD'),
       },
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000, // 30 seconds
+      socketTimeout: 60000, // 60 seconds
+    };
+
+    console.log('Email configuration:', {
+      host: emailConfig.host,
+      port: emailConfig.port,
+      secure: emailConfig.secure,
+      user: emailConfig.auth.user,
+      // Don't log the password
+      hasPassword: !!emailConfig.auth.pass,
+    });
+
+    this.transporter = nodemailer.createTransport(emailConfig);
+
+    // Verify the transporter configuration
+    this.transporter.verify((error) => {
+      if (error) {
+        console.error('Email transporter verification failed:', error);
+      } else {
+        console.log('Email transporter is ready to send emails');
+      }
     });
   }
 
@@ -170,7 +193,12 @@ export class EmailService {
     candidateName: string,
     position: string,
   ): Promise<void> {
+    console.log(
+      `Email Service: Starting sendApplicationReceivedEmail for ${recipientEmail}`,
+    );
+
     try {
+      console.log(`Email Service: Looking for template "Application Received"`);
       // Find the template
       const template = await this.emailTemplateRepository.findOne({
         where: { name: 'Application Received' },
@@ -178,9 +206,10 @@ export class EmailService {
 
       if (!template) {
         console.error('Email template "Application Received" not found');
-        return;
+        throw new Error('Email template "Application Received" not found');
       }
 
+      console.log(`Email Service: Template found, preparing email content`);
       // Replace placeholders in subject and body
       const subject = template.subject_template.replace(
         '{{position}}',
@@ -199,8 +228,24 @@ export class EmailService {
         html: body,
       };
 
-      await this.transporter.sendMail(mailOptions);
+      console.log(`Email Service: Sending email with options:`, {
+        from: mailOptions.from,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        // Don't log the full HTML body, just its length
+        bodyLength: mailOptions.html.length,
+      });
 
+      console.log(`Email Service: Attempting to send email via transporter...`);
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`Email Service: Email sent successfully:`, {
+        messageId: info.messageId,
+        response: info.response,
+        accepted: info.accepted,
+        rejected: info.rejected,
+      });
+
+      console.log(`Email Service: Saving mail log to database`);
       // Log the email
       await this.mailLogRepository.save({
         application_id: application.id,
@@ -214,8 +259,17 @@ export class EmailService {
       );
     } catch (error) {
       console.error(
-        `Failed to send application received email: ${error.message}`,
+        `Email Service: Failed to send application received email:`,
+        {
+          message: error.message,
+          code: error.code,
+          command: error.command,
+          response: error.response,
+          responseCode: error.responseCode,
+        },
       );
+      console.error(`Email Service: Full error stack:`, error.stack);
+      throw error; // Re-throw to be caught by the applications service
     }
   }
 

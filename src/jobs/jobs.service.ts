@@ -16,6 +16,7 @@ import { UpdateJobDto } from './dto/update-job.dto';
 import axios from 'axios';
 import { EmailService } from '../email/email.service';
 import { Application } from '../applications/application.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JobsService {
@@ -32,6 +33,7 @@ export class JobsService {
     private readonly applicationRepository: Repository<Application>,
     private readonly emailService: EmailService,
     private dataSource: DataSource,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -394,7 +396,7 @@ export class JobsService {
       languageSkills: job.languageSkills || '',
     };
 
-    const apiUrl = 'http://host.docker.internal:5000/parse-jd';
+    const apiUrl = `${this.configService.get('FLASK_API_URL')}/parse-jd`;
 
     // Add detailed logging
     console.log('Starting request to Flask API:', new Date().toISOString());

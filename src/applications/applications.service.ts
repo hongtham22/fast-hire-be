@@ -91,11 +91,12 @@ export class ApplicationsService {
         job.jobTitle,
       );
       console.log(
-        `Application submission: Application received email sent to ${email}`,
+        `Application submission: Application received email sent successfully to ${email}`,
       );
     } catch (error) {
       console.error(
         `Application submission: Failed to send application received email: ${error.message}`,
+        error.stack ? `\nStack trace: ${error.stack}` : '',
       );
       // Don't fail the application submission if email sending fails
     }
