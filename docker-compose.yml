@@ -14,11 +14,9 @@ services:
       - PG_PORT=${PG_PORT}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_SECURE=${EMAIL_SECURE}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      # Mailjet Email Configuration (replaces SMTP)
+      - MAILJET_API_KEY=${MAILJET_API_KEY}
+      - MAILJET_SECRET_KEY=${MAILJET_SECRET_KEY}
       - EMAIL_FROM=${EMAIL_FROM}
       - JWT_SECRET=${JWT_SECRET}
       - FLASK_API_URL=${FLASK_API_URL}

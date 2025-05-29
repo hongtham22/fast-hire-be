@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { EmailTemplate } from './entities/email-template.entity';
 import { MailLog } from './entities/mail-log.entity';
@@ -15,10 +14,11 @@ import {
 } from './dto/send-notification.dto';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import Mailjet from 'node-mailjet';
 
 @Injectable()
 export class EmailService {
-  private transporter: any;
+  private mailjet: any;
 
   constructor(
     private configService: ConfigService,
@@ -31,38 +31,78 @@ export class EmailService {
     @InjectQueue('email-queue')
     private readonly emailQueue: Queue,
   ) {
-    const emailConfig = {
-      host: this.configService.get('EMAIL_HOST'),
-      port: parseInt(this.configService.get('EMAIL_PORT')) || 587,
-      secure: this.configService.get('EMAIL_SECURE') === 'true',
-      auth: {
-        user: this.configService.get('EMAIL_USER'),
-        pass: this.configService.get('EMAIL_PASSWORD'),
-      },
-      connectionTimeout: 60000, // 60 seconds
-      greetingTimeout: 30000, // 30 seconds
-      socketTimeout: 60000, // 60 seconds
-    };
+    // Initialize Mailjet
+    const mailjetApiKey = this.configService.get('MAILJET_API_KEY');
+    const mailjetSecretKey = this.configService.get('MAILJET_SECRET_KEY');
 
-    console.log('Email configuration:', {
-      host: emailConfig.host,
-      port: emailConfig.port,
-      secure: emailConfig.secure,
-      user: emailConfig.auth.user,
-      // Don't log the password
-      hasPassword: !!emailConfig.auth.pass,
+    console.log('Mailjet configuration:', {
+      hasApiKey: !!mailjetApiKey,
+      hasSecretKey: !!mailjetSecretKey,
+      apiKeyLength: mailjetApiKey ? mailjetApiKey.length : 0,
     });
 
-    this.transporter = nodemailer.createTransport(emailConfig);
+    if (mailjetApiKey && mailjetSecretKey) {
+      this.mailjet = Mailjet.apiConnect(mailjetApiKey, mailjetSecretKey);
+      console.log('Mailjet client initialized successfully');
+    } else {
+      console.error('Mailjet credentials not found in environment variables');
+      console.error('Required: MAILJET_API_KEY and MAILJET_SECRET_KEY');
+    }
+  }
 
-    // Verify the transporter configuration
-    this.transporter.verify((error) => {
-      if (error) {
-        console.error('Email transporter verification failed:', error);
-      } else {
-        console.log('Email transporter is ready to send emails');
-      }
-    });
+  /**
+   * Send email using Mailjet API
+   */
+  private async sendMailjetEmail(options: {
+    from: string;
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+  }): Promise<any> {
+    if (!this.mailjet) {
+      throw new Error(
+        'Mailjet client not initialized. Check your API credentials.',
+      );
+    }
+
+    try {
+      console.log(`Mailjet: Sending email to ${options.to}`);
+
+      const request = this.mailjet.post('send', { version: 'v3.1' }).request({
+        Messages: [
+          {
+            From: {
+              Email: options.from,
+              Name: 'FastHire System',
+            },
+            To: [
+              {
+                Email: options.to,
+              },
+            ],
+            Subject: options.subject,
+            HTMLPart: options.html,
+            TextPart: options.text || '',
+          },
+        ],
+      });
+
+      const result = await request;
+      console.log(` Mailjet: Email sent successfully`, {
+        messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        status: result.body?.Messages?.[0]?.Status,
+      });
+
+      return result;
+    } catch (error) {
+      console.error(` Mailjet: Failed to send email:`, {
+        message: error.message,
+        statusCode: error.statusCode,
+        response: error.response?.text,
+      });
+      throw error;
+    }
   }
 
   // Email template methods
@@ -237,12 +277,10 @@ export class EmailService {
       });
 
       console.log(`Email Service: Attempting to send email via transporter...`);
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await this.sendMailjetEmail(mailOptions);
       console.log(`Email Service: Email sent successfully:`, {
-        messageId: info.messageId,
-        response: info.response,
-        accepted: info.accepted,
-        rejected: info.rejected,
+        messageId: info.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        status: info.body?.Messages?.[0]?.Status,
       });
 
       console.log(`Email Service: Saving mail log to database`);
