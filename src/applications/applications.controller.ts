@@ -12,6 +12,7 @@ import {
   Query,
   NotFoundException,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApplicationsService } from './applications.service';
@@ -101,6 +102,12 @@ export class ApplicationsController {
     @Param('applicantId', ParseUUIDPipe) applicantId: string,
   ): Promise<Application[]> {
     return this.applicationsService.findByApplicantId(applicantId);
+  }
+
+  @Get('hr/candidates')
+  @Roles(Role.HR)
+  async getCandidatesForHR(@Request() req): Promise<any[]> {
+    return this.applicationsService.getCandidatesForHR(req.user.id);
   }
 
   @Get(':jobId/applications/:applicationId')
