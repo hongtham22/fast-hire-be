@@ -21,9 +21,9 @@ export const AppDataSource = new DataSource({
   username: process.env.PG_USER || 'postgres',
   password: process.env.PG_PASSWORD || 'postgres',
   database: process.env.PG_DB || 'postgres',
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  // ssl: {
+  //   rejectUnauthorized: false,
+  // },
   entities: [
     User,
     Job,

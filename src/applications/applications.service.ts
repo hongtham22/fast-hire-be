@@ -331,4 +331,164 @@ export class ApplicationsService {
 
     return this.applicationRepository.save(application);
   }
+
+  /**
+   * Get unique candidates from all jobs created by a specific HR user
+   * @param hrUserId HR user ID
+   * @returns Array of candidate information with application history
+   */
+  async getCandidatesForHR(hrUserId: string): Promise<any[]> {
+    // Get applications for jobs created by this HR user
+    const applications = await this.applicationRepository
+      .createQueryBuilder('application')
+      .leftJoinAndSelect('application.applicant', 'applicant')
+      .leftJoinAndSelect('application.job', 'job')
+      .leftJoinAndSelect('application.cvKeyword', 'cvKeyword')
+      .leftJoinAndSelect('cvKeyword.categories', 'categories')
+      .leftJoinAndSelect('categories.category', 'category')
+      .where('job.created_by = :hrUserId', { hrUserId })
+      .orderBy('application.submittedAt', 'DESC')
+      .getMany();
+
+    // Group applications by applicant
+    const candidatesMap = new Map();
+
+    applications.forEach((app) => {
+      const applicantId = app.applicant.id;
+
+      if (!candidatesMap.has(applicantId)) {
+        // Process structured data from CV keywords
+        let skills = [];
+        let technical_skills = [];
+        let languages = [];
+        let education = [];
+        let experience_years = null;
+        let latest_company = null;
+
+        if (app.cvKeyword) {
+          try {
+            const structuredData: Record<string, any> = {};
+
+            if (
+              app.cvKeyword.categories &&
+              app.cvKeyword.categories.length > 0
+            ) {
+              for (const categoryItem of app.cvKeyword.categories) {
+                if (categoryItem.category && categoryItem.category.name) {
+                  structuredData[categoryItem.category.name] =
+                    categoryItem.value || null;
+                }
+              }
+            }
+
+            if (Object.keys(structuredData).length > 0) {
+              skills =
+                structuredData['programming_language']?.slice(0, 6) || [];
+              technical_skills =
+                structuredData['technical_skill']?.slice(0, 9) || [];
+              languages = structuredData['language']?.slice(0, 3) || [];
+              education = structuredData['education'] || [];
+
+              // Get experience years directly from candidate data
+              if (
+                structuredData['candidate'] &&
+                structuredData['candidate'].experience_years !== undefined
+              ) {
+                experience_years = Number(
+                  structuredData['candidate'].experience_years,
+                );
+              }
+
+              // Get latest company from experience data
+              if (
+                structuredData['experience'] &&
+                structuredData['experience'].length > 0
+              ) {
+                const experiences = structuredData['experience'];
+                if (experiences.length > 0) {
+                  latest_company = experiences[0].company || null;
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error processing CV keyword data:', error);
+          }
+        }
+
+        candidatesMap.set(applicantId, {
+          id: app.applicant.id,
+          name: app.applicant.name,
+          email: app.applicant.email,
+          phone: app.applicant.phone,
+          skills,
+          technical_skills,
+          languages,
+          education,
+          experience_years,
+          latest_company,
+          totalApplications: 1,
+          latestApplication: {
+            id: app.id,
+            jobTitle: app.job.jobTitle,
+            submittedAt: app.submittedAt,
+            matchingScore: app.matchingScore,
+            result: app.result,
+            status:
+              app.result === true
+                ? 'hired'
+                : app.result === false
+                  ? 'rejected'
+                  : 'pending',
+          },
+          applications: [
+            {
+              id: app.id,
+              jobId: app.job.id,
+              jobTitle: app.job.jobTitle,
+              submittedAt: app.submittedAt,
+              matchingScore: app.matchingScore,
+              result: app.result,
+              status:
+                app.result === true
+                  ? 'hired'
+                  : app.result === false
+                    ? 'rejected'
+                    : 'pending',
+            },
+          ],
+        });
+      } else {
+        // Add this application to existing candidate
+        const candidate = candidatesMap.get(applicantId);
+        candidate.totalApplications++;
+
+        const applicationData = {
+          id: app.id,
+          jobId: app.job.id,
+          jobTitle: app.job.jobTitle,
+          submittedAt: app.submittedAt,
+          matchingScore: app.matchingScore,
+          result: app.result,
+          status:
+            app.result === true
+              ? 'hired'
+              : app.result === false
+                ? 'rejected'
+                : 'pending',
+        };
+
+        candidate.applications.push(applicationData);
+
+        // Update latest application if this is more recent
+        if (
+          new Date(app.submittedAt) >
+          new Date(candidate.latestApplication.submittedAt)
+        ) {
+          candidate.latestApplication = applicationData;
+        }
+      }
+    });
+
+    return Array.from(candidatesMap.values());
+  }
 }
