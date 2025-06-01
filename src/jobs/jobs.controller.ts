@@ -53,14 +53,32 @@ export class JobsController {
   }
 
   @Get('hr/all')
-  @Roles(Role.ADMIN, Role.HR)
+  @Roles(Role.HR)
   async findAllJobsForHR(
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('status') status?: JobStatus,
     @Query('query') query?: string,
+    @Request() req?: any,
   ) {
     return this.jobsService.findAllJobsForHR({
+      page,
+      limit,
+      status,
+      query,
+      userId: req.user.id,
+    });
+  }
+
+  @Get('admin/all')
+  @Roles(Role.ADMIN)
+  async findAllJobsForAdmin(
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('status') status?: JobStatus,
+    @Query('query') query?: string,
+  ) {
+    return this.jobsService.findAllJobsForAdmin({
       page,
       limit,
       status,

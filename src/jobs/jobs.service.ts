@@ -210,6 +210,7 @@ export class JobsService {
     limit?: number;
     status?: JobStatus;
     query?: string;
+    userId?: string;
   }): Promise<JobListResponseDto> {
     const page = options?.page || 1;
     const limit = options?.limit || 10;
@@ -237,6 +238,13 @@ export class JobsService {
       .addGroupBy('location.id')
       .addGroupBy('creator.id');
 
+    // Filter by HR user ID - HR can only see their own jobs
+    if (options?.userId) {
+      queryBuilder.andWhere('job.createdBy = :userId', {
+        userId: options.userId,
+      });
+    }
+
     // Apply status filter if provided
     if (options?.status) {
       queryBuilder.andWhere('job.status = :status', {
@@ -258,10 +266,132 @@ export class JobsService {
     // Execute the query with getRawAndEntities to get both raw and mapped entities
     const { entities, raw } = await queryBuilder.getRawAndEntities();
 
-    // Get the total count
-    const total = await this.jobRepository.count({
-      where: options?.status ? { status: options.status } : {},
+    // Get the total count with same filters
+    const countQueryBuilder = this.jobRepository.createQueryBuilder('job');
+
+    if (options?.userId) {
+      countQueryBuilder.andWhere('job.createdBy = :userId', {
+        userId: options.userId,
+      });
+    }
+
+    if (options?.status) {
+      countQueryBuilder.andWhere('job.status = :status', {
+        status: options.status,
+      });
+    }
+
+    if (options?.query) {
+      countQueryBuilder.andWhere('job.jobTitle ILIKE :query', {
+        query: `%${options.query}%`,
+      });
+    }
+
+    const total = await countQueryBuilder.getCount();
+
+    // Transform the results, mapping applicationCount correctly from raw results
+    const jobs = entities.map((job, index) => {
+      const applicationCount = Number(raw[index]?.applicationCount || 0);
+      return {
+        id: job.id,
+        jobTitle: job.jobTitle,
+        location: job.location?.name || 'General',
+        applicationCount,
+        status: job.status,
+        expireDate: job.expireDate,
+        createdAt: job.createdAt,
+        creator: job.creator
+          ? {
+              id: job.creator.id,
+              name: job.creator.name,
+              email: job.creator.email,
+            }
+          : undefined,
+      } as JobListItemDto;
     });
+
+    return {
+      jobs,
+      total,
+    };
+  }
+
+  /**
+   * Get all jobs for Admin with application count (Admin can see all jobs)
+   * @param options Filtering and pagination options
+   * @returns List of jobs and related information
+   */
+  async findAllJobsForAdmin(options?: {
+    page?: number;
+    limit?: number;
+    status?: JobStatus;
+    query?: string;
+  }): Promise<JobListResponseDto> {
+    const page = options?.page || 1;
+    const limit = options?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Build query with left join to applications to count them
+    const queryBuilder = this.jobRepository
+      .createQueryBuilder('job')
+      .leftJoinAndSelect('job.applications', 'application')
+      .leftJoinAndSelect('job.location', 'location')
+      .leftJoinAndSelect('job.creator', 'creator')
+      .select([
+        'job.id',
+        'job.jobTitle',
+        'job.status',
+        'job.createdAt',
+        'job.expireDate',
+        'location.name',
+        'creator.id',
+        'creator.name',
+        'creator.email',
+      ])
+      .addSelect('COUNT(application.id)', 'applicationCount')
+      .groupBy('job.id')
+      .addGroupBy('location.id')
+      .addGroupBy('creator.id');
+
+    // Admin can see ALL jobs - no user filter
+
+    // Apply status filter if provided
+    if (options?.status) {
+      queryBuilder.andWhere('job.status = :status', {
+        status: options.status,
+      });
+    }
+
+    // Apply search filter if provided
+    if (options?.query) {
+      queryBuilder.andWhere('job.jobTitle ILIKE :query', {
+        query: `%${options.query}%`,
+      });
+    }
+
+    // Apply pagination
+    queryBuilder.orderBy('job.createdAt', 'DESC');
+    queryBuilder.skip(skip).take(limit);
+
+    // Execute the query with getRawAndEntities to get both raw and mapped entities
+    const { entities, raw } = await queryBuilder.getRawAndEntities();
+
+    // Get the total count with same filters
+    const countQueryBuilder = this.jobRepository.createQueryBuilder('job');
+
+    if (options?.status) {
+      countQueryBuilder.andWhere('job.status = :status', {
+        status: options.status,
+      });
+    }
+
+    if (options?.query) {
+      countQueryBuilder.andWhere('job.jobTitle ILIKE :query', {
+        query: `%${options.query}%`,
+      });
+    }
+
+    const total = await countQueryBuilder.getCount();
 
     // Transform the results, mapping applicationCount correctly from raw results
     const jobs = entities.map((job, index) => {

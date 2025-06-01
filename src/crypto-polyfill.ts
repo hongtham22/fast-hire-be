@@ -1,4 +1,3 @@
-// crypto-polyfill.ts
 import * as crypto from 'crypto';
 
 if (typeof globalThis !== 'undefined' && !globalThis.crypto) {
