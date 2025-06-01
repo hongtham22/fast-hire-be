@@ -18,8 +18,8 @@ export class User {
   @Column({ type: 'enum', enum: ['admin', 'hr'] })
   role: 'admin' | 'hr';
 
-  @Column({ name: 'is_email_verified', type: 'boolean', default: false })
-  isEmailVerified: boolean;
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
 
   @Column({ name: 'created_at', type: 'timestamp', default: () => 'now()' })
   createdAt: Date;

@@ -14,6 +14,19 @@ export class UsersService {
     return this.usersRepository.find();
   }
 
+  async findAllHRUsers(includeInactive: boolean = false): Promise<User[]> {
+    const whereCondition: any = { role: 'hr' };
+    
+    // By default, only show active users unless specifically requested
+    if (!includeInactive) {
+      whereCondition.isActive = true;
+    }
+    
+    return this.usersRepository.find({
+      where: whereCondition,
+    });
+  }
+
   async findOne(id: string): Promise<User> {
     return this.usersRepository.findOneBy({ id });
   }
@@ -34,5 +47,13 @@ export class UsersService {
 
   async delete(id: string): Promise<void> {
     await this.usersRepository.delete(id);
+  }
+
+  async deactivate(id: string): Promise<void> {
+    await this.usersRepository.update(id, { isActive: false });
+  }
+
+  async activate(id: string): Promise<void> {
+    await this.usersRepository.update(id, { isActive: true });
   }
 }

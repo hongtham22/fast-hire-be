@@ -5,12 +5,14 @@ import {
   Post,
   Body,
   Put,
+  Patch,
   Delete,
   UseGuards,
   Request,
   ForbiddenException,
   NotFoundException,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
@@ -32,6 +34,18 @@ export class UsersController {
   @Roles(Role.ADMIN)
   async findAll(): Promise<User[]> {
     return this.usersService.findAll();
+  }
+
+  /**
+   * Get only HR users - Only Admin can view HR users for management
+   */
+  @Get('hr-users')
+  @Roles(Role.ADMIN)
+  async findAllHRUsers(
+    @Query('includeInactive') includeInactive?: string,
+  ): Promise<User[]> {
+    const showInactive = includeInactive === 'true';
+    return this.usersService.findAllHRUsers(showInactive);
   }
 
   /**
@@ -80,7 +94,7 @@ export class UsersController {
     const userData = {
       ...createUserDto,
       passwordHash: hashedPassword,
-      isEmailVerified: true, // Auto-verify HR accounts created by admin
+      isActive: true, // New HR accounts are active by default
     };
 
     return this.usersService.create(userData);
@@ -173,7 +187,93 @@ export class UsersController {
   }
 
   /**
-   * Delete user - Only Admin can delete users (HR accounts)
+   * Reset password for HR user - Only Admin can reset HR passwords
+   */
+  @Patch(':id/reset-password')
+  @Roles(Role.ADMIN)
+  async resetPassword(
+    @Param('id') id: string,
+    @Body()
+    resetPasswordDto: {
+      newPassword: string;
+    },
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findOne(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Only allow resetting HR user passwords
+    if (user.role !== Role.HR) {
+      throw new ForbiddenException('Can only reset HR user passwords');
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(
+      resetPasswordDto.newPassword,
+      10,
+    );
+
+    await this.usersService.update(id, {
+      ...user,
+      passwordHash: hashedNewPassword,
+    });
+
+    return { message: 'Password reset successfully' };
+  }
+
+  /**
+   * Deactivate HR user - Only Admin can deactivate HR accounts
+   */
+  @Patch(':id/deactivate')
+  @Roles(Role.ADMIN)
+  async deactivate(@Param('id') id: string): Promise<{ message: string }> {
+    const user = await this.usersService.findOne(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Prevent admin from deactivating other admin accounts
+    if (user.role === Role.ADMIN) {
+      throw new ForbiddenException('Cannot deactivate admin accounts');
+    }
+
+    // Check if user is already deactivated
+    if (!user.isActive) {
+      throw new BadRequestException('User is already deactivated');
+    }
+
+    await this.usersService.deactivate(id);
+    return { message: 'User deactivated successfully' };
+  }
+
+  /**
+   * Activate HR user - Only Admin can activate HR accounts
+   */
+  @Patch(':id/activate')
+  @Roles(Role.ADMIN)
+  async activate(@Param('id') id: string): Promise<{ message: string }> {
+    const user = await this.usersService.findOne(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Only allow activating HR accounts
+    if (user.role === Role.ADMIN) {
+      throw new ForbiddenException('Cannot activate admin accounts');
+    }
+
+    // Check if user is already active
+    if (user.isActive) {
+      throw new BadRequestException('User is already active');
+    }
+
+    await this.usersService.activate(id);
+    return { message: 'User activated successfully' };
+  }
+
+  /**
+   * Delete user - Only Admin can delete users (HR accounts) - Keep for hard delete if needed
    */
   @Delete(':id')
   @Roles(Role.ADMIN)

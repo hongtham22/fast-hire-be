@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
@@ -13,12 +13,17 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (user && (await bcrypt.compare(password, user.passwordHash))) {
+      // Check if user is active
+      if (!user.isActive) {
+        throw new UnauthorizedException('Account has been deactivated');
+      }
+
       return {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        isEmailVerified: user.isEmailVerified,
+        isActive: user.isActive,
         createdAt: user.createdAt,
       };
     }
