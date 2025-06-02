@@ -435,7 +435,7 @@ export class ApplicationsService {
             result: app.result,
             status:
               app.result === true
-                ? 'hired'
+                ? 'accepted'
                 : app.result === false
                   ? 'rejected'
                   : 'pending',
@@ -450,7 +450,7 @@ export class ApplicationsService {
               result: app.result,
               status:
                 app.result === true
-                  ? 'hired'
+                  ? 'accepted'
                   : app.result === false
                     ? 'rejected'
                     : 'pending',
@@ -471,7 +471,7 @@ export class ApplicationsService {
           result: app.result,
           status:
             app.result === true
-              ? 'hired'
+              ? 'accepted'
               : app.result === false
                 ? 'rejected'
                 : 'pending',
