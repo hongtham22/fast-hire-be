@@ -31,6 +31,7 @@ import { CvProcessingModule } from './cv-processing/cv-processing.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { AuthModule } from './auth/auth.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { UploadsModule } from './uploads/uploads.module';
     ScheduledTasksModule,
     AuthModule,
     UploadsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
