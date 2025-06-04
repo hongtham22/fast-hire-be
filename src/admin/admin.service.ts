@@ -57,7 +57,7 @@ export class AdminService {
       .leftJoinAndSelect('app.job', 'job')
       .leftJoinAndSelect('app.applicant', 'applicant')
       .orderBy('app.submittedAt', 'DESC')
-      .limit(10)
+      .limit(6)
       .getMany();
 
     return applications.map((app) => ({
@@ -104,39 +104,45 @@ export class AdminService {
   }
 
   /**
-   * Get applications chart data (last 6 months)
+   * Get applications chart data (last 30 days)
    */
   async getApplicationsChartData() {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const applications = await this.applicationRepository
       .createQueryBuilder('app')
-      .where('app.submittedAt >= :date', { date: sixMonthsAgo })
+      .where('app.submittedAt >= :date', { date: thirtyDaysAgo })
       .orderBy('app.submittedAt', 'ASC')
       .getMany();
 
-    const monthlyData = {};
+    const dailyData = {};
     applications.forEach((app) => {
-      const month = app.submittedAt.toISOString().slice(0, 7); // YYYY-MM
-      if (!monthlyData[month]) {
-        monthlyData[month] = 0;
+      const day = app.submittedAt.toISOString().slice(0, 10); // YYYY-MM-DD
+      if (!dailyData[day]) {
+        dailyData[day] = 0;
       }
-      monthlyData[month]++;
+      dailyData[day]++;
     });
 
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
+    const days = [];
+    for (let i = 29; i >= 0; i--) {
       const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const month = date.toISOString().slice(0, 7);
-      const monthName = date.toLocaleString('default', { month: 'short' });
-      months.push({
-        month: monthName,
-        applications: monthlyData[month] || 0,
+      date.setDate(date.getDate() - i);
+      const day = date.toISOString().slice(0, 10);
+      const dayName = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+      days.push({
+        day: dayName,
+        applications: dailyData[day] || 0,
       });
     }
 
-    return months;
+    return {
+      labels: days.map((d) => d.day),
+      data: days.map((d) => d.applications),
+    };
   }
 }
