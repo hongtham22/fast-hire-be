@@ -10,6 +10,7 @@ import FormData from 'form-data';
 import { ConfigService } from '@nestjs/config';
 import { JdKeywordsService } from '../jd_keywords/jd-keywords.service';
 import { SpacesService } from '../uploads/spaces.service';
+import { Job } from '../jobs/job.entity';
 
 @Injectable()
 export class CVKeywordsService {
@@ -24,6 +25,8 @@ export class CVKeywordsService {
     private categoryRepository: Repository<CVCategory>,
     @InjectRepository(Application)
     private applicationRepository: Repository<Application>,
+    @InjectRepository(Job)
+    private jobRepository: Repository<Job>,
     private configService: ConfigService,
     private jdKeywordsService: JdKeywordsService,
     private spacesService: SpacesService,
@@ -254,7 +257,36 @@ export class CVKeywordsService {
    */
   private async getJobKeywords(jobId: string): Promise<any> {
     try {
+      // Get keywords from JD keywords service
       const keywords = await this.jdKeywordsService.getKeywordsByJobId(jobId);
+
+      // Get job details to access max scores
+      const job = await this.jobRepository.findOne({
+        where: { id: jobId },
+      });
+
+      // Add custom max scores if job exists
+      if (job) {
+        keywords['custom_max_scores'] = {
+          role_job: job.maxScoreRoleJob,
+          experience_years: job.maxScoreExperienceYears,
+          programming_language: job.maxScoreProgrammingLanguage,
+          key_responsibilities: job.maxScoreKeyResponsibilities,
+          certificate: job.maxScoreCertificate,
+          language: job.maxScoreLanguage,
+          soft_skill: job.maxScoreSoftSkill,
+          technical_skill: job.maxScoreTechnicalSkill,
+        };
+        console.log(
+          `✅ [DEBUG] Added custom max scores for job ${jobId}:`,
+          keywords['custom_max_scores'],
+        );
+      } else {
+        console.warn(
+          `⚠️ [DEBUG] Job ${jobId} not found, using default max scores`,
+        );
+      }
+
       return keywords || {};
     } catch (error) {
       console.error('Error fetching JD keywords:', error);

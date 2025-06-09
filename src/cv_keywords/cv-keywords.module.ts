@@ -10,6 +10,7 @@ import { Application } from '@/applications/application.entity';
 import { JdKeywordsModule } from '@/jd_keywords/jd-keywords.module';
 import { ApplicationsModule } from '@/applications/applications.module';
 import { UploadsModule } from '@/uploads/uploads.module';
+import { Job } from '../jobs/job.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UploadsModule } from '@/uploads/uploads.module';
       CVKeywordCategory,
       CVCategory,
       Application,
+      Job,
     ]),
     ConfigModule,
     JdKeywordsModule,

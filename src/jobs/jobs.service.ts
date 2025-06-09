@@ -518,7 +518,6 @@ export class JobsService {
 
     const requestData = {
       jobTitle: job.jobTitle,
-      location: job.location?.name || '',
       experienceYears: job.experienceYear.toString(),
       keyResponsibilities: job.keyResponsibility || '',
       mustHave: job.mustHave || '',
