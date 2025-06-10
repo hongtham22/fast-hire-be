@@ -336,25 +336,10 @@ export class EmailService {
       throw new Error(`Email template with ID ${templateId} not found`);
     }
 
-    // Prepare context for template rendering
+    // Prepare context for template rendering - adapt to match template variables
     const context = {
-      applicant: {
-        name: application.applicant.name,
-        email: application.applicant.email,
-      },
-      job: {
-        title: application.job.jobTitle,
-        location: application.job.location?.name || 'Not specified',
-      },
-      application: {
-        result:
-          application.result === true
-            ? 'Accepted'
-            : application.result === false
-              ? 'Rejected'
-              : 'Pending',
-        note: application.note || '',
-      },
+      candidate_name: application.applicant.name,
+      position: application.job.jobTitle,
     };
 
     // Render the template
@@ -422,25 +407,12 @@ export class EmailService {
           continue;
         }
 
-        // Prepare context for template rendering
+        // Prepare context for template rendering - adapt to match template variables
         const context = {
-          applicant: {
-            name: application.applicant.name,
-            email: application.applicant.email,
-          },
-          job: {
-            title: application.job.jobTitle,
-            location: application.job.location?.name || 'Not specified',
-          },
-          application: {
-            result:
-              application.result === true
-                ? 'Accepted'
-                : application.result === false
-                  ? 'Rejected'
-                  : 'Pending',
-            note: application.note || '',
-          },
+          candidate_name: application.applicant.name,
+          position: application.job.jobTitle,
+          interview_date: '{{interview_date}}', // Placeholder for future use
+          interview_time: '{{interview_time}}', // Placeholder for future use
         };
 
         // Render the template
@@ -509,25 +481,12 @@ export class EmailService {
       throw new Error(`Email template with ID ${templateId} not found`);
     }
 
-    // Prepare context for template rendering
+    // Prepare context for template rendering - adapt to match template variables
     const context = {
-      applicant: {
-        name: application.applicant.name,
-        email: application.applicant.email,
-      },
-      job: {
-        title: application.job.jobTitle,
-        location: application.job.location?.name || 'Not specified',
-      },
-      application: {
-        result:
-          application.result === true
-            ? 'Accepted'
-            : application.result === false
-              ? 'Rejected'
-              : 'Pending',
-        note: application.note || '',
-      },
+      candidate_name: application.applicant.name,
+      position: application.job.jobTitle,
+      interview_date: '{{interview_date}}', // Placeholder for future use
+      interview_time: '{{interview_time}}', // Placeholder for future use
     };
 
     // Render the template
