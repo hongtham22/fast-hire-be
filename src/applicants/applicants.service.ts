@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Applicant } from './applicant.entity';
 import { CreateApplicantDto } from './dto/create-applicant.dto';
+import { Application } from '../applications/application.entity';
 
 @Injectable()
 export class ApplicantsService {
   constructor(
     @InjectRepository(Applicant)
     private applicantRepository: Repository<Applicant>,
+    @InjectRepository(Application)
+    private readonly applicationRepository: Repository<Application>,
   ) {}
 
   /**
@@ -96,5 +99,36 @@ export class ApplicantsService {
    */
   async deleteAll(): Promise<void> {
     await this.applicantRepository.delete({});
+  }
+
+  async getStatistics() {
+    // Get total number of applicants
+    const totalApplicants = await this.applicantRepository.count();
+
+    // Get applicants with multiple applications
+    const multipleApplicationsQuery = await this.applicationRepository
+      .createQueryBuilder('application')
+      .select('application.applicantId')
+      .addSelect('COUNT(*)', 'applicationCount')
+      .groupBy('application.applicantId')
+      .having('COUNT(*) >= 2')
+      .getRawMany();
+
+    const multipleApplicationsCount = multipleApplicationsQuery.length;
+
+    // Get applicants with high matching score
+    const highMatchingQuery = await this.applicationRepository
+      .createQueryBuilder('application')
+      .select('DISTINCT application.applicantId')
+      .where('application.matchingScore >= :score', { score: 80 })
+      .getRawMany();
+
+    const highMatchingCount = highMatchingQuery.length;
+
+    return {
+      totalApplicants,
+      multipleApplicationsCount,
+      highMatchingCount,
+    };
   }
 }
