@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { ApplicantsService } from './applicants.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -12,7 +12,10 @@ export class ApplicantsController {
 
   @Get('statistics')
   @Roles(Role.HR, Role.ADMIN)
-  async getStatistics() {
-    return this.applicantsService.getStatistics();
+  async getStatistics(@Request() req) {
+    // For HR users, filter by their user ID
+    // For ADMIN users, get all statistics (pass undefined)
+    const hrUserId = req.user.role === Role.HR ? req.user.id : undefined;
+    return this.applicantsService.getStatistics(hrUserId);
   }
 }

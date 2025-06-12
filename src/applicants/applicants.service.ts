@@ -101,8 +101,51 @@ export class ApplicantsService {
     await this.applicantRepository.delete({});
   }
 
-  async getStatistics() {
-    // Get total number of applicants
+  async getStatistics(hrUserId?: string) {
+    // If hrUserId is provided, filter by jobs created by that HR user
+    if (hrUserId) {
+      // Get total number of applicants from jobs created by this HR user
+      const totalApplicantsQuery = await this.applicationRepository
+        .createQueryBuilder('application')
+        .innerJoin('application.job', 'job')
+        .select('DISTINCT application.applicantId')
+        .where('job.created_by = :hrUserId', { hrUserId })
+        .getRawMany();
+
+      const totalApplicants = totalApplicantsQuery.length;
+
+      // Get applicants with multiple applications (filtered by HR user's jobs)
+      const multipleApplicationsQuery = await this.applicationRepository
+        .createQueryBuilder('application')
+        .innerJoin('application.job', 'job')
+        .select('application.applicantId')
+        .addSelect('COUNT(*)', 'applicationCount')
+        .where('job.created_by = :hrUserId', { hrUserId })
+        .groupBy('application.applicantId')
+        .having('COUNT(*) >= 2')
+        .getRawMany();
+
+      const multipleApplicationsCount = multipleApplicationsQuery.length;
+
+      // Get applicants with high matching score (filtered by HR user's jobs)
+      const highMatchingQuery = await this.applicationRepository
+        .createQueryBuilder('application')
+        .innerJoin('application.job', 'job')
+        .select('DISTINCT application.applicantId')
+        .where('job.created_by = :hrUserId', { hrUserId })
+        .andWhere('application.matchingScore >= :score', { score: 80 })
+        .getRawMany();
+
+      const highMatchingCount = highMatchingQuery.length;
+
+      return {
+        totalApplicants,
+        multipleApplicationsCount,
+        highMatchingCount,
+      };
+    }
+
+    // Original logic for admin (all applicants)
     const totalApplicants = await this.applicantRepository.count();
 
     // Get applicants with multiple applications
