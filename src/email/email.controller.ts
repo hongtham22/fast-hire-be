@@ -144,6 +144,7 @@ export class EmailController {
         success: true,
         successCount: result.successful,
         failedApplications: result.failed,
+        skippedApplications: result.skipped,
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -158,6 +159,22 @@ export class EmailController {
   ) {
     try {
       return await this.emailService.previewEmail(applicationId, templateId);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Get('check-applicant-job-email/:applicantId/:jobId')
+  @Roles(Role.ADMIN, Role.HR)
+  async checkApplicantJobEmail(
+    @Param('applicantId') applicantId: string,
+    @Param('jobId') jobId: string,
+  ) {
+    try {
+      return await this.emailService.hasApplicantReceivedEmailForJob(
+        applicantId,
+        jobId,
+      );
     } catch (error) {
       throw new BadRequestException(error.message);
     }

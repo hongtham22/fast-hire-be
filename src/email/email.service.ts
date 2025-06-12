@@ -196,6 +196,87 @@ export class EmailService {
     });
   }
 
+  /**
+   * Get all applications for a specific applicant and job
+   * @param applicantId - ID of the applicant
+   * @param jobId - ID of the job
+   * @returns Array of applications sorted by submission date (newest first)
+   */
+  private async getApplicantJobApplications(
+    applicantId: string,
+    jobId: string,
+  ): Promise<Application[]> {
+    return this.applicationRepository.find({
+      where: { applicantId, jobId },
+      relations: ['applicant', 'job'],
+      order: { submittedAt: 'DESC' }, // Latest first
+    });
+  }
+
+  /**
+   * Check if an applicant has already received an email for a specific job
+   * @param applicantId - ID of the applicant
+   * @param jobId - ID of the job
+   * @returns Object indicating if email was sent and details
+   */
+  async hasApplicantReceivedEmailForJob(
+    applicantId: string,
+    jobId: string,
+  ): Promise<{
+    hasReceived: boolean;
+    emailType?: string;
+    sentAt?: Date;
+    applicationId?: string;
+  }> {
+    const applications = await this.getApplicantJobApplications(
+      applicantId,
+      jobId,
+    );
+
+    // Check if any application has already sent an email
+    for (const app of applications) {
+      if (app.emailSent) {
+        // Get mail logs to determine email type
+        const mailLogs = await this.mailLogRepository.find({
+          where: { application_id: app.id },
+          relations: ['emailTemplate'],
+          order: { sent_at: 'DESC' },
+        });
+
+        if (mailLogs.length > 0) {
+          return {
+            hasReceived: true,
+            emailType: mailLogs[0].emailTemplate?.name,
+            sentAt: mailLogs[0].sent_at,
+            applicationId: app.id,
+          };
+        }
+      }
+    }
+
+    return { hasReceived: false };
+  }
+
+  /**
+   * Mark all applications for a specific applicant and job as email sent
+   * @param applicantId - ID of the applicant
+   * @param jobId - ID of the job
+   */
+  private async markAllApplicantJobApplicationsAsEmailSent(
+    applicantId: string,
+    jobId: string,
+  ): Promise<void> {
+    const applications = await this.getApplicantJobApplications(
+      applicantId,
+      jobId,
+    );
+
+    for (const app of applications) {
+      app.emailSent = true;
+      await this.applicationRepository.save(app);
+    }
+  }
+
   async sendApplicationEmail(
     applicationId: string,
     templateId: string,
@@ -336,6 +417,18 @@ export class EmailService {
       throw new Error(`Email template with ID ${templateId} not found`);
     }
 
+    // IMPORTANT: Check if applicant already received email for this job
+    const emailStatus = await this.hasApplicantReceivedEmailForJob(
+      application.applicantId,
+      application.jobId,
+    );
+
+    if (emailStatus.hasReceived) {
+      throw new Error(
+        `${application.applicant.name} has already received a ${emailStatus.emailType} email for ${application.job.jobTitle} on ${new Date(emailStatus.sentAt).toLocaleDateString()}. Only one final result email is allowed per applicant per job.`,
+      );
+    }
+
     // Prepare context for template rendering - adapt to match template variables
     const context = {
       candidate_name: application.applicant.name,
@@ -363,10 +456,12 @@ export class EmailService {
       mailLogDto,
     });
 
-    // Update application if markAsSent is true
+    // Mark ALL applications for this applicant+job as emailSent
     if (markAsSent) {
-      application.emailSent = true;
-      await this.applicationRepository.save(application);
+      await this.markAllApplicantJobApplicationsAsEmailSent(
+        application.applicantId,
+        application.jobId,
+      );
     }
 
     // Save the log
@@ -379,7 +474,11 @@ export class EmailService {
   async sendBulkNotifications(
     dto: SendBulkNotificationDto,
     userId: string,
-  ): Promise<{ successful: number; failed: string[] }> {
+  ): Promise<{
+    successful: number;
+    failed: string[];
+    skipped: string[];
+  }> {
     const { applicationIds, templateId, markAsSent = true } = dto;
 
     // Get the template
@@ -391,7 +490,11 @@ export class EmailService {
     const results = {
       successful: 0,
       failed: [] as string[],
+      skipped: [] as string[], // Track skipped emails
     };
+
+    // Track processed applicant+job combinations to avoid duplicates in the same batch
+    const processedApplicantJobs = new Set<string>();
 
     // Process each application
     for (const applicationId of applicationIds) {
@@ -407,6 +510,30 @@ export class EmailService {
           continue;
         }
 
+        const applicantJobKey = `${application.applicantId}-${application.jobId}`;
+
+        // CASE 1: Skip if we already processed this applicant+job in this batch
+        if (processedApplicantJobs.has(applicantJobKey)) {
+          results.skipped.push(
+            `${application.applicant.name} - ${application.job.jobTitle} (duplicate in this batch)`,
+          );
+          continue;
+        }
+
+        // CASE 2: Skip if applicant already received email for this job previously
+        const emailStatus = await this.hasApplicantReceivedEmailForJob(
+          application.applicantId,
+          application.jobId,
+        );
+
+        if (emailStatus.hasReceived) {
+          results.skipped.push(
+            `${application.applicant.name} - ${application.job.jobTitle} (already received ${emailStatus.emailType} on ${new Date(emailStatus.sentAt).toLocaleDateString()})`,
+          );
+          continue;
+        }
+
+        // CASE 3: OK to send email
         // Prepare context for template rendering - adapt to match template variables
         const context = {
           candidate_name: application.applicant.name,
@@ -436,10 +563,15 @@ export class EmailService {
           mailLogDto,
         });
 
-        // Update application if markAsSent is true
+        // Mark this applicant+job combination as processed
+        processedApplicantJobs.add(applicantJobKey);
+
+        // Mark ALL applications for this applicant+job as emailSent
         if (markAsSent) {
-          application.emailSent = true;
-          await this.applicationRepository.save(application);
+          await this.markAllApplicantJobApplicationsAsEmailSent(
+            application.applicantId,
+            application.jobId,
+          );
         }
 
         // Save the log
