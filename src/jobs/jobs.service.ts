@@ -496,14 +496,18 @@ export class JobsService {
    * @returns Stored JD keyword information
    */
   async extractAndStoreJDKeywords(jobId: string): Promise<JDKeyword> {
-    // Check if job already has keywords
+    // Check if job already has keywords and delete them to re-extract
     const existingKeyword = await this.jdKeywordRepository.findOne({
       where: { jobId },
       relations: ['categories'],
     });
 
     if (existingKeyword) {
-      return existingKeyword;
+      // Delete existing keywords to re-extract with updated job data
+      await this.jdKeywordCategoryRepository.delete({
+        jdKeywordId: existingKeyword.id,
+      });
+      await this.jdKeywordRepository.delete({ id: existingKeyword.id });
     }
 
     // Get detailed job information

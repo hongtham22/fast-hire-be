@@ -155,6 +155,24 @@ export class JobsController {
     return job;
   }
 
+  @Put(':id/update-with-keywords')
+  @Roles(Role.ADMIN, Role.HR)
+  async updateJobWithKeywords(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateJobDto: UpdateJobDto,
+  ) {
+    // First update the job
+    const job = await this.jobsService.update(id, updateJobDto);
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${id} not found`);
+    }
+
+    // Then extract and store keywords again
+    await this.jobsService.extractAndStoreJDKeywords(id);
+
+    return job;
+  }
+
   /**
    * Close a job
    * @param id Job ID
