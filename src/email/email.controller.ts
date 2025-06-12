@@ -81,6 +81,15 @@ export class EmailController {
     return this.emailService.findMailLogsByApplicationId(applicationId);
   }
 
+  @Get('logs/applicant/:applicantId/job/:jobId')
+  @Roles(Role.ADMIN, Role.HR)
+  findLogsByApplicantAndJob(
+    @Param('applicantId') applicantId: string,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.emailService.findMailLogsByApplicantAndJob(applicantId, jobId);
+  }
+
   @Delete('logs/:id')
   @Roles(Role.ADMIN)
   deleteMailLog(@Param('id') id: string) {

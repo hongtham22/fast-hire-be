@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { EmailTemplate } from './entities/email-template.entity';
 import { MailLog } from './entities/mail-log.entity';
@@ -157,8 +157,51 @@ export class EmailService {
     });
   }
 
+  /**
+   * Get mail logs for all applications of a specific applicant and job
+   * This returns only RESULT emails (accepted/rejected/interview), excluding automatic "Application Received" emails
+   */
+  async findMailLogsByApplicantAndJob(
+    applicantId: string,
+    jobId: string,
+  ): Promise<MailLog[]> {
+    // First get all applications for this applicant and job
+    const applications = await this.getApplicantJobApplications(
+      applicantId,
+      jobId,
+    );
+
+    if (applications.length === 0) {
+      return [];
+    }
+
+    // Get all mail logs for these applications
+    const applicationIds = applications.map((app) => app.id);
+
+    // Get all mail logs, then filter out "Application Received" emails
+    const allMailLogs = await this.mailLogRepository.find({
+      where: {
+        application_id:
+          applicationIds.length === 1 ? applicationIds[0] : In(applicationIds),
+      },
+      relations: ['application', 'emailTemplate', 'creator'],
+      order: { sent_at: 'DESC' },
+    });
+
+    // Filter out "Application Received" emails - only show result emails
+    return allMailLogs.filter(
+      (log) => log.emailTemplate?.name !== 'Application Received',
+    );
+  }
+
   async createMailLog(createMailLogDto: CreateMailLogDto): Promise<MailLog> {
-    const mailLog = this.mailLogRepository.create(createMailLogDto);
+    const mailLog = this.mailLogRepository.create({
+      application_id: createMailLogDto.applicationId,
+      email_template_id: createMailLogDto.emailTemplateId,
+      subject: createMailLogDto.subject,
+      message: createMailLogDto.message,
+      created_by: createMailLogDto.createdBy,
+    });
     return this.mailLogRepository.save(mailLog);
   }
 
@@ -214,10 +257,11 @@ export class EmailService {
   }
 
   /**
-   * Check if an applicant has already received an email for a specific job
+   * Check if an applicant has already received a RESULT email for a specific job
+   * This method only checks for final result emails (accepted/rejected), not "Application Received" emails
    * @param applicantId - ID of the applicant
    * @param jobId - ID of the job
-   * @returns Object indicating if email was sent and details
+   * @returns Object indicating if result email was sent and details
    */
   async hasApplicantReceivedEmailForJob(
     applicantId: string,
@@ -233,10 +277,53 @@ export class EmailService {
       jobId,
     );
 
-    // Check if any application has already sent an email
+    // Get all mail logs for all applications of this applicant + job combination
+    const allMailLogs = [];
+    for (const app of applications) {
+      const mailLogs = await this.mailLogRepository.find({
+        where: { application_id: app.id },
+        relations: ['emailTemplate'],
+        order: { sent_at: 'DESC' },
+      });
+
+      // Add application info to each mail log for reference
+      mailLogs.forEach((log) => {
+        allMailLogs.push({
+          ...log,
+          applicationId: app.id,
+          applicationEmailSent: app.emailSent,
+        });
+      });
+    }
+
+    // Sort all mail logs by sent_at DESC to get the most recent first
+    allMailLogs.sort(
+      (a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime(),
+    );
+
+    // Look for the most recent RESULT email (not "Application Received")
+    const resultTemplateNames = [
+      'Application Accepted',
+      'Application Rejected',
+      'Interview Invitation',
+    ];
+
+    for (const mailLog of allMailLogs) {
+      const templateName = mailLog.emailTemplate?.name;
+      if (templateName && resultTemplateNames.includes(templateName)) {
+        return {
+          hasReceived: true,
+          emailType: templateName,
+          sentAt: mailLog.sent_at,
+          applicationId: mailLog.applicationId,
+        };
+      }
+    }
+
+    // Also check the emailSent flag as backup (for cases where mail logs might be missing)
     for (const app of applications) {
       if (app.emailSent) {
-        // Get mail logs to determine email type
+        // If emailSent=true but no result email found in logs, assume last mail log is the result
         const mailLogs = await this.mailLogRepository.find({
           where: { application_id: app.id },
           relations: ['emailTemplate'],
@@ -244,12 +331,16 @@ export class EmailService {
         });
 
         if (mailLogs.length > 0) {
-          return {
-            hasReceived: true,
-            emailType: mailLogs[0].emailTemplate?.name,
-            sentAt: mailLogs[0].sent_at,
-            applicationId: app.id,
-          };
+          const lastLog = mailLogs[0];
+          // Skip "Application Received" emails
+          if (lastLog.emailTemplate?.name !== 'Application Received') {
+            return {
+              hasReceived: true,
+              emailType: lastLog.emailTemplate?.name || 'Unknown Result Email',
+              sentAt: lastLog.sent_at,
+              applicationId: app.id,
+            };
+          }
         }
       }
     }
@@ -365,12 +456,13 @@ export class EmailService {
       });
 
       console.log(`Email Service: Saving mail log to database`);
-      // Log the email
+      // Log the email (automatic emails don't have a creator)
       await this.mailLogRepository.save({
         application_id: application.id,
         email_template_id: template.id,
         subject: subject,
         message: body,
+        created_by: null, // Automatic emails don't have a creator
       });
 
       console.log(
@@ -425,7 +517,7 @@ export class EmailService {
 
     if (emailStatus.hasReceived) {
       throw new Error(
-        `${application.applicant.name} has already received a ${emailStatus.emailType} email for ${application.job.jobTitle} on ${new Date(emailStatus.sentAt).toLocaleDateString()}. Only one final result email is allowed per applicant per job.`,
+        `${application.applicant.name} has already received a ${emailStatus.emailType} email for ${application.job.jobTitle} on ${new Date(emailStatus.sentAt).toLocaleDateString()}. Only one result email (accepted/rejected/interview) is allowed per applicant per job.`,
       );
     }
 
@@ -448,7 +540,7 @@ export class EmailService {
       createdBy: userId,
     };
 
-    // Add to queue for sending
+    // Add to queue for sending (mail log will be created by queue processor after successful send)
     await this.emailQueue.add('send-email', {
       to: application.applicant.email,
       subject,
@@ -464,8 +556,16 @@ export class EmailService {
       );
     }
 
-    // Save the log
-    return this.createMailLog(mailLogDto);
+    // Return a temporary mail log object (actual log will be created by queue processor)
+    return {
+      id: 'pending',
+      application_id: applicationId,
+      email_template_id: templateId,
+      subject,
+      message,
+      created_by: userId,
+      sent_at: new Date(),
+    } as MailLog;
   }
 
   /**
@@ -555,7 +655,7 @@ export class EmailService {
           createdBy: userId,
         };
 
-        // Add to queue for sending
+        // Add to queue for sending (mail log will be created by queue processor after successful send)
         await this.emailQueue.add('send-email', {
           to: application.applicant.email,
           subject,
@@ -574,9 +674,7 @@ export class EmailService {
           );
         }
 
-        // Save the log
-        await this.createMailLog(mailLogDto);
-
+        // Don't create mail log here - queue processor will handle it after successful send
         results.successful++;
       } catch (error) {
         console.error(

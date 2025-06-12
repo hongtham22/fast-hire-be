@@ -66,11 +66,40 @@ export class ApplicationsService {
     const cvFileKey = uploadResult.key;
     console.log(`Application submission: CV file uploaded to ${cvFileUrl}`);
 
-    // 3. Create the application
+    // 3. Check if applicant already received result email for this job
+    console.log(
+      `Application submission: Checking if applicant ${applicant.id} already received email for job ${jobId}`,
+    );
+    let emailSent = false;
+    try {
+      const emailStatus =
+        await this.emailService.hasApplicantReceivedEmailForJob(
+          applicant.id,
+          jobId,
+        );
+      if (emailStatus.hasReceived) {
+        emailSent = true;
+        console.log(
+          `Application submission: Applicant already received ${emailStatus.emailType} email on ${emailStatus.sentAt}, setting emailSent=true`,
+        );
+      } else {
+        console.log(
+          `Application submission: No previous result email found for applicant, setting emailSent=false`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Application submission: Failed to check existing emails: ${error.message}`,
+      );
+      // Continue with emailSent=false if check fails
+    }
+
+    // 4. Create the application with correct emailSent status
     const newApplication = this.applicationRepository.create({
       applicantId: applicant.id,
       jobId,
       cvFileUrl: cvFileUrl,
+      emailSent: emailSent, // Set based on existing email status
     });
 
     const savedApplication =
@@ -79,7 +108,7 @@ export class ApplicationsService {
     // Get job details for email
     const job = await this.jobsService.findOne(jobId);
 
-    // 4. Send application received email
+    // 5. Send application received email
     try {
       console.log(
         `Application submission: Sending application received email to ${email}`,
@@ -101,7 +130,7 @@ export class ApplicationsService {
       // Don't fail the application submission if email sending fails
     }
 
-    // 5. Add CV processing to queue
+    // 6. Add CV processing to queue
     try {
       console.log(
         `Application submission: Adding CV processing to queue for application ${savedApplication.id}`,
@@ -490,5 +519,95 @@ export class ApplicationsService {
     });
 
     return Array.from(candidatesMap.values());
+  }
+
+  /**
+   * Sync emailSent flag for existing applications based on email history
+   * This method should be called once to fix existing data after implementing the auto-sync logic
+   */
+  async syncEmailSentFlags(): Promise<{
+    processed: number;
+    updated: number;
+    errors: string[];
+  }> {
+    console.log('Starting emailSent flag synchronization...');
+
+    const results = {
+      processed: 0,
+      updated: 0,
+      errors: [] as string[],
+    };
+
+    try {
+      // Get all applications grouped by applicant+job
+      const applications = await this.applicationRepository.find({
+        relations: ['applicant', 'job'],
+        order: { submittedAt: 'ASC' },
+      });
+
+      // Group applications by applicant+job combination
+      const applicantJobGroups = new Map<string, typeof applications>();
+
+      for (const app of applications) {
+        const key = `${app.applicantId}-${app.jobId}`;
+        if (!applicantJobGroups.has(key)) {
+          applicantJobGroups.set(key, []);
+        }
+        applicantJobGroups.get(key)!.push(app);
+      }
+
+      console.log(
+        `Found ${applicantJobGroups.size} unique applicant+job combinations`,
+      );
+
+      // Process each group
+      for (const [key, groupApps] of applicantJobGroups.entries()) {
+        const [applicantId, jobId] = key.split('-');
+        results.processed++;
+
+        try {
+          // Check if this applicant+job has any result emails
+          const emailStatus =
+            await this.emailService.hasApplicantReceivedEmailForJob(
+              applicantId,
+              jobId,
+            );
+
+          const shouldHaveEmailSent = emailStatus.hasReceived;
+
+          // Update all applications in this group if needed
+          let groupUpdated = false;
+          for (const app of groupApps) {
+            if (app.emailSent !== shouldHaveEmailSent) {
+              await this.applicationRepository.update(app.id, {
+                emailSent: shouldHaveEmailSent,
+              });
+              groupUpdated = true;
+              console.log(
+                `Updated application ${app.id}: emailSent ${app.emailSent} → ${shouldHaveEmailSent} (${emailStatus.emailType || 'no email'})`,
+              );
+            }
+          }
+
+          if (groupUpdated) {
+            results.updated++;
+          }
+        } catch (error) {
+          const errorMsg = `Failed to process group ${key}: ${error.message}`;
+          console.error(errorMsg);
+          results.errors.push(errorMsg);
+        }
+      }
+
+      console.log(
+        `EmailSent sync completed: ${results.updated}/${results.processed} groups updated`,
+      );
+      return results;
+    } catch (error) {
+      const errorMsg = `EmailSent sync failed: ${error.message}`;
+      console.error(errorMsg);
+      results.errors.push(errorMsg);
+      throw error;
+    }
   }
 }

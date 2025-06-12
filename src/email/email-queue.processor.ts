@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MailLog } from './entities/mail-log.entity';
+import { CreateMailLogDto } from './dto/create-mail-log.dto';
 import Mailjet from 'node-mailjet';
 
 @Processor('email-queue')
@@ -32,10 +33,15 @@ export class EmailQueueProcessor {
   }
 
   @Process('send-email')
-  async handleSendEmail(job: Job<any>) {
+  async handleSendEmail(job: Job<{
+    to: string;
+    subject: string;
+    html: string;
+    mailLogDto?: CreateMailLogDto;
+  }>) {
     try {
       this.logger.log(`Processing email job ${job.id}`);
-      const { to, subject, html } = job.data;
+      const { to, subject, html, mailLogDto } = job.data;
 
       if (!this.mailjet) {
         throw new Error('Mailjet client not initialized');
@@ -65,6 +71,18 @@ export class EmailQueueProcessor {
         messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
         status: result.body?.Messages?.[0]?.Status,
       });
+
+      // Only create mail log AFTER successful email sending
+      if (mailLogDto) {
+        await this.mailLogRepository.save({
+          application_id: mailLogDto.applicationId,
+          email_template_id: mailLogDto.emailTemplateId,
+          subject: mailLogDto.subject,
+          message: mailLogDto.message,
+          created_by: mailLogDto.createdBy,
+        });
+        this.logger.log(`Mail log saved for application ${mailLogDto.applicationId}`);
+      }
 
       return true;
     } catch (error) {

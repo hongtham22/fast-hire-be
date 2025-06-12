@@ -180,4 +180,18 @@ export class ApplicationsController {
       evaluateDto.result,
     );
   }
+
+  /**
+   * Sync emailSent flags for existing applications based on email history
+   * This endpoint should be called once to fix existing data after implementing auto-sync logic
+   */
+  @Post('sync-email-flags')
+  @Roles(Role.ADMIN)
+  async syncEmailSentFlags(): Promise<{
+    processed: number;
+    updated: number;
+    errors: string[];
+  }> {
+    return this.applicationsService.syncEmailSentFlags();
+  }
 }
