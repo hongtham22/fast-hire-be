@@ -44,7 +44,9 @@ export class AuthService {
   }
 
   async createHR(createHRDto: any) {
-    const hashedPassword = await bcrypt.hash(createHRDto.password, 10);
+    // Auto-generate default password "hr1234" for HR accounts
+    const defaultPassword = 'hr1234';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     return this.usersService.create({
       ...createHRDto,
       passwordHash: hashedPassword,

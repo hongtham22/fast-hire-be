@@ -77,7 +77,6 @@ export class UsersController {
     createUserDto: {
       name: string;
       email: string;
-      password: string;
       role: Role;
     },
   ): Promise<User> {
@@ -88,8 +87,9 @@ export class UsersController {
       );
     }
 
-    // Hash password before saving
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    // Auto-generate default password "hr1234" for HR accounts
+    const defaultPassword = 'hr1234';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     const userData = {
       ...createUserDto,
