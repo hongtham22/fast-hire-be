@@ -16,12 +16,12 @@ export class UsersService {
 
   async findAllHRUsers(includeInactive: boolean = false): Promise<User[]> {
     const whereCondition: any = { role: 'hr' };
-    
+
     // By default, only show active users unless specifically requested
     if (!includeInactive) {
       whereCondition.isActive = true;
     }
-    
+
     return this.usersRepository.find({
       where: whereCondition,
     });

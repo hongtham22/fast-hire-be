@@ -20,7 +20,7 @@ export class AdminService {
    * Get dashboard statistics
    */
   async getDashboardStats() {
-    const [totalCandidates, totalJobs, totalHR, avgMatchingScore] =
+    const [totalCandidates, totalJobs, pendingJobs, totalHR, avgMatchingScore] =
       await Promise.all([
         this.applicationRepository
           .createQueryBuilder('app')
@@ -29,6 +29,9 @@ export class AdminService {
           .then((result) => parseInt(result?.count) || 0),
         this.jobRepository.count({
           where: { status: JobStatus.APPROVED },
+        }),
+        this.jobRepository.count({
+          where: { status: JobStatus.PENDING },
         }),
         this.userRepository.count({
           where: { role: 'hr', isActive: true },
@@ -43,6 +46,7 @@ export class AdminService {
     return {
       totalCandidates,
       totalJobs,
+      pendingJobs,
       totalHR,
       averageMatchingScore: avgMatchingScore,
     };

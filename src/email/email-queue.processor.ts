@@ -33,12 +33,14 @@ export class EmailQueueProcessor {
   }
 
   @Process('send-email')
-  async handleSendEmail(job: Job<{
-    to: string;
-    subject: string;
-    html: string;
-    mailLogDto?: CreateMailLogDto;
-  }>) {
+  async handleSendEmail(
+    job: Job<{
+      to: string;
+      subject: string;
+      html: string;
+      mailLogDto?: CreateMailLogDto;
+    }>,
+  ) {
     try {
       this.logger.log(`Processing email job ${job.id}`);
       const { to, subject, html, mailLogDto } = job.data;
@@ -81,7 +83,9 @@ export class EmailQueueProcessor {
           message: mailLogDto.message,
           created_by: mailLogDto.createdBy,
         });
-        this.logger.log(`Mail log saved for application ${mailLogDto.applicationId}`);
+        this.logger.log(
+          `Mail log saved for application ${mailLogDto.applicationId}`,
+        );
       }
 
       return true;

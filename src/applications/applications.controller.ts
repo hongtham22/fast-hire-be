@@ -110,6 +110,14 @@ export class ApplicationsController {
     return this.applicationsService.getCandidatesForHR(req.user.id);
   }
 
+  @Get('admin/candidates')
+  @Roles(Role.ADMIN)
+  async getAllCandidatesForAdmin(
+    @Query('hrUserId') hrUserId?: string,
+  ): Promise<any[]> {
+    return this.applicationsService.getAllCandidatesForAdmin(hrUserId);
+  }
+
   @Get(':jobId/applications/:applicationId')
   @Roles(Role.ADMIN, Role.HR)
   async findOneByJobAndApplication(
