@@ -173,12 +173,6 @@ export class JobsController {
     return job;
   }
 
-  /**
-   * Close a job
-   * @param id Job ID
-   * @param body Body with close reason
-   * @returns The closed job
-   */
   @Post(':id/close')
   @Roles(Role.ADMIN, Role.HR)
   async closeJob(

@@ -14,31 +14,20 @@ export class ApplicantsService {
     private readonly applicationRepository: Repository<Application>,
   ) {}
 
-  /**
-   * Find an applicant by email
-   */
   async findByEmail(email: string): Promise<Applicant | null> {
     return this.applicantRepository.findOne({ where: { email } });
   }
 
-  /**
-   * Create a new applicant
-   */
   async create(createApplicantDto: CreateApplicantDto): Promise<Applicant> {
     const newApplicant = this.applicantRepository.create(createApplicantDto);
     return this.applicantRepository.save(newApplicant);
   }
 
-  /**
-   * Find an applicant by email or create a new one if not exists
-   * If the applicant exists, update their name and phone number with the latest information
-   */
   async findOrCreate(
     createApplicantDto: CreateApplicantDto,
   ): Promise<Applicant> {
     const { email, name, phone } = createApplicantDto;
 
-    // Try to find the applicant by email
     const existingApplicant = await this.findByEmail(email);
 
     // If applicant exists, update their name and phone with the latest data
@@ -67,9 +56,6 @@ export class ApplicantsService {
     return this.create(createApplicantDto);
   }
 
-  /**
-   * Find an applicant by ID
-   */
   async findOne(id: string): Promise<Applicant> {
     return this.applicantRepository.findOne({
       where: { id },
@@ -77,34 +63,23 @@ export class ApplicantsService {
     });
   }
 
-  /**
-   * Find all applicants
-   */
   async findAll(): Promise<Applicant[]> {
     return this.applicantRepository.find({
       relations: ['applications'],
     });
   }
 
-  /**
-   * Update an existing applicant
-   */
   async update(id: string, updateData: Partial<Applicant>): Promise<Applicant> {
     await this.applicantRepository.update(id, updateData);
     return this.findOne(id);
   }
 
-  /**
-   * Delete all applicants
-   */
   async deleteAll(): Promise<void> {
     await this.applicantRepository.delete({});
   }
 
   async getStatistics(hrUserId?: string) {
-    // If hrUserId is provided, filter by jobs created by that HR user
     if (hrUserId) {
-      // Get total number of applicants from jobs created by this HR user
       const totalApplicantsQuery = await this.applicationRepository
         .createQueryBuilder('application')
         .innerJoin('application.job', 'job')
@@ -114,7 +89,6 @@ export class ApplicantsService {
 
       const totalApplicants = totalApplicantsQuery.length;
 
-      // Get applicants with multiple applications (filtered by HR user's jobs)
       const multipleApplicationsQuery = await this.applicationRepository
         .createQueryBuilder('application')
         .innerJoin('application.job', 'job')
@@ -127,7 +101,6 @@ export class ApplicantsService {
 
       const multipleApplicationsCount = multipleApplicationsQuery.length;
 
-      // Get applicants with high matching score (filtered by HR user's jobs)
       const highMatchingQuery = await this.applicationRepository
         .createQueryBuilder('application')
         .innerJoin('application.job', 'job')
@@ -145,10 +118,13 @@ export class ApplicantsService {
       };
     }
 
-    // Original logic for admin (all applicants)
-    const totalApplicants = await this.applicantRepository.count();
+    const totalApplicantsQuery = await this.applicationRepository
+      .createQueryBuilder('application')
+      .select('COUNT(DISTINCT application.applicantId)', 'count')
+      .getRawOne();
 
-    // Get applicants with multiple applications
+    const totalApplicants = parseInt(totalApplicantsQuery?.count) || 0;
+
     const multipleApplicationsQuery = await this.applicationRepository
       .createQueryBuilder('application')
       .select('application.applicantId')
@@ -159,7 +135,6 @@ export class ApplicantsService {
 
     const multipleApplicationsCount = multipleApplicationsQuery.length;
 
-    // Get applicants with high matching score
     const highMatchingQuery = await this.applicationRepository
       .createQueryBuilder('application')
       .select('DISTINCT application.applicantId')

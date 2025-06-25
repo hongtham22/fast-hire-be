@@ -35,9 +35,6 @@ export class ApplicationsController {
     private readonly spacesService: SpacesService,
   ) {}
 
-  /**
-   * Legacy endpoint, kept for backward compatibility
-   */
   @Post('submit-cv')
   @Public()
   @UseInterceptors(FileInterceptor('cv'))
@@ -49,16 +46,12 @@ export class ApplicationsController {
       throw new BadRequestException('CV file is required');
     }
 
-    // Upload file to Spaces
     const uploadResult = await this.spacesService.uploadFile(file, 'cvs');
     const cvFileUrl = uploadResult.url;
 
     return this.applicationsService.create(createApplicationDto, cvFileUrl);
   }
 
-  /**
-   * New endpoint for submitting applications with applicant information
-   */
   @Post('submit')
   @Public()
   @UseInterceptors(FileInterceptor('cv'))
@@ -145,16 +138,12 @@ export class ApplicationsController {
    */
   @Delete('delete-all')
   @Roles(Role.ADMIN)
-  // @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAll(
     @Query('deleteApplicants') deleteApplicants?: boolean,
   ): Promise<void> {
     return this.applicationsService.deleteAll(deleteApplicants);
   }
 
-  /**
-   * Delete a specific application by ID
-   */
   @Delete(':id')
   @Roles(Role.ADMIN, Role.HR)
   async deleteApplication(

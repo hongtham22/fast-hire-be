@@ -36,11 +36,6 @@ export class JobsService {
     private configService: ConfigService,
   ) {}
 
-  /**
-   * Create a new job
-   * @param createJobDto - The DTO with job information
-   * @returns The created job
-   */
   async create(createJobDto: CreateJobDto): Promise<Job> {
     try {
       const job = this.jobRepository.create(createJobDto);
@@ -54,13 +49,7 @@ export class JobsService {
     }
   }
 
-  /**
-   * Validate max scores total equals 100
-   * @param jobData Job data with max scores
-   * @throws Error if total max score is not 100
-   */
   private validateMaxScores(jobData: CreateJobDto | UpdateJobDto): void {
-    // Check if any max score fields are provided
     const hasMaxScores = [
       'maxScoreRoleJob',
       'maxScoreExperienceYears',
@@ -117,12 +106,6 @@ export class JobsService {
     }
   }
 
-  /**
-   * Create a new job with authenticated user
-   * @param createJobDto - Data for creating a job
-   * @param userId - ID of the authenticated user
-   * @returns The created job
-   */
   async createWithAuthenticatedUser(
     createJobDto: CreateJobDto,
     userId: string,
@@ -147,11 +130,6 @@ export class JobsService {
     }
   }
 
-  /**
-   * Get all open jobs (status not CLOSED)
-   * @param options Filtering and pagination options
-   * @returns List of open jobs
-   */
   async findOpenJobs(options?: {
     page?: number;
     limit?: number;
@@ -171,28 +149,22 @@ export class JobsService {
         approvedStatus: JobStatus.APPROVED,
       });
 
-    // If filtering by location
     if (options?.locationId) {
       queryBuilder.andWhere('job.locationId = :locationId', {
         locationId: options.locationId,
       });
     }
 
-    // Add expiration date filtering condition
     queryBuilder.andWhere('(job.expireDate IS NULL OR job.expireDate > NOW())');
 
-    // Add search condition by title
     if (options?.query) {
-      // case insensitive search
       queryBuilder.andWhere('job.jobTitle ILIKE :query', {
         query: `%${options.query}%`,
       });
     }
 
-    // Sort by creation date (newest first)
     queryBuilder.orderBy('job.createdAt', 'DESC');
 
-    // Add pagination
     queryBuilder.skip(skip).take(limit);
 
     const [jobs, total] = await queryBuilder.getManyAndCount();
@@ -200,11 +172,6 @@ export class JobsService {
     return { jobs, total };
   }
 
-  /**
-   * Get all jobs for HR with application count
-   * @param options Filtering and pagination options
-   * @returns List of jobs and related information
-   */
   async findAllJobsForHR(options?: {
     page?: number;
     limit?: number;
@@ -316,11 +283,6 @@ export class JobsService {
     };
   }
 
-  /**
-   * Get all jobs for Admin with application count (Admin can see all jobs)
-   * @param options Filtering and pagination options
-   * @returns List of jobs and related information
-   */
   async findAllJobsForAdmin(options?: {
     page?: number;
     limit?: number;
@@ -353,30 +315,23 @@ export class JobsService {
       .addGroupBy('location.id')
       .addGroupBy('creator.id');
 
-    // Admin can see ALL jobs - no user filter
-
-    // Apply status filter if provided
     if (options?.status) {
       queryBuilder.andWhere('job.status = :status', {
         status: options.status,
       });
     }
 
-    // Apply search filter if provided
     if (options?.query) {
       queryBuilder.andWhere('job.jobTitle ILIKE :query', {
         query: `%${options.query}%`,
       });
     }
 
-    // Apply pagination
     queryBuilder.orderBy('job.createdAt', 'DESC');
     queryBuilder.skip(skip).take(limit);
 
-    // Execute the query with getRawAndEntities to get both raw and mapped entities
     const { entities, raw } = await queryBuilder.getRawAndEntities();
 
-    // Get the total count with same filters
     const countQueryBuilder = this.jobRepository.createQueryBuilder('job');
 
     if (options?.status) {
@@ -393,7 +348,6 @@ export class JobsService {
 
     const total = await countQueryBuilder.getCount();
 
-    // Transform the results, mapping applicationCount correctly from raw results
     const jobs = entities.map((job, index) => {
       const applicationCount = Number(raw[index]?.applicationCount || 0);
       return {
@@ -446,11 +400,6 @@ export class JobsService {
     }
   }
 
-  /**
-   * Get JD keywords for a job
-   * @param jobId - ID of the job to get keywords for
-   * @returns JD keyword information for the job
-   */
   async getJDKeywords(jobId: string) {
     const jdKeyword = await this.jdKeywordRepository.findOne({
       where: { jobId },
@@ -461,12 +410,10 @@ export class JobsService {
       return null;
     }
 
-    // Get the job to access max scores
     const job = await this.jobRepository.findOne({
       where: { id: jobId },
     });
 
-    // Restructure data to match the expected format in the frontend
     const result = {};
 
     for (const category of jdKeyword.categories) {
@@ -490,27 +437,19 @@ export class JobsService {
     return result;
   }
 
-  /**
-   * Extract and store keyword information from job description
-   * @param jobId - ID of the job to extract keywords for
-   * @returns Stored JD keyword information
-   */
   async extractAndStoreJDKeywords(jobId: string): Promise<JDKeyword> {
-    // Check if job already has keywords and delete them to re-extract
     const existingKeyword = await this.jdKeywordRepository.findOne({
       where: { jobId },
       relations: ['categories'],
     });
 
     if (existingKeyword) {
-      // Delete existing keywords to re-extract with updated job data
       await this.jdKeywordCategoryRepository.delete({
         jdKeywordId: existingKeyword.id,
       });
       await this.jdKeywordRepository.delete({ id: existingKeyword.id });
     }
 
-    // Get detailed job information
     const job = await this.jobRepository.findOne({
       where: { id: jobId },
       relations: ['location'],
@@ -531,14 +470,12 @@ export class JobsService {
 
     const apiUrl = `${this.configService.get('FLASK_API_URL')}/parse-jd`;
 
-    // Add detailed logging
     console.log('Starting request to Flask API:', new Date().toISOString());
     console.log(
       'Job data:',
       JSON.stringify(requestData).substring(0, 500) + '...',
     );
 
-    // Use retry function for timeout handling
     const MAX_RETRIES = 3;
     let lastError = null;
 
@@ -671,15 +608,10 @@ export class JobsService {
     }
   }
 
-  /**
-   * Extract and store keywords for all jobs that don't have keywords yet
-   * @returns List of processed jobs
-   */
   async processAllJobsForKeywords(): Promise<{
     processed: number;
     skipped: number;
   }> {
-    // Get all approved jobs
     const jobs = await this.jobRepository.find({
       where: { status: JobStatus.APPROVED },
     });
@@ -687,7 +619,6 @@ export class JobsService {
     let processed = 0;
     let skipped = 0;
 
-    // Check if each job already has keywords
     for (const job of jobs) {
       const existingKeyword = await this.jdKeywordRepository.findOne({
         where: { jobId: job.id },
@@ -706,19 +637,12 @@ export class JobsService {
     return { processed, skipped };
   }
 
-  /**
-   * Delete a job and all of its related data (applications, JD keywords, etc.)
-   * @param jobId - The ID of the job to delete
-   * @returns Message indicating successful deletion
-   */
   async deleteJobWithKeywords(jobId: string): Promise<{ message: string }> {
-    // Create a query runner for transaction
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // First, check if the job exists
       const job = await this.jobRepository.findOne({
         where: { id: jobId },
       });
@@ -730,12 +654,10 @@ export class JobsService {
         );
       }
 
-      // Find all applications for this job
       const applications = await this.applicationRepository.find({
         where: { jobId },
       });
 
-      // Delete mail logs for all applications
       for (const application of applications) {
         await this.emailService.deleteMailLogs(application.id);
       }
@@ -755,7 +677,6 @@ export class JobsService {
       });
 
       if (jdKeyword) {
-        // Delete all JDKeywordCategory entries first (due to foreign key constraints)
         if (jdKeyword.categories && jdKeyword.categories.length > 0) {
           await queryRunner.manager.delete(
             JDKeywordCategory,
@@ -763,14 +684,11 @@ export class JobsService {
           );
         }
 
-        // Then delete the JDKeyword entry
         await queryRunner.manager.delete(JDKeyword, jdKeyword.id);
       }
 
-      // Finally, delete the job
       await queryRunner.manager.delete(Job, jobId);
 
-      // Commit the transaction
       await queryRunner.commitTransaction();
 
       return {
@@ -791,15 +709,8 @@ export class JobsService {
     }
   }
 
-  /**
-   * Update a job
-   * @param id - ID of the job to update
-   * @param updateJobDto - Data for updating the job
-   * @returns The updated job
-   */
   async update(id: string, updateJobDto: UpdateJobDto): Promise<Job> {
     try {
-      // Check if job exists
       const existingJob = await this.jobRepository.findOne({
         where: { id },
       });
@@ -808,13 +719,10 @@ export class JobsService {
         throw new NotFoundException(`Job with ID ${id} not found`);
       }
 
-      // Validate max scores
       this.validateMaxScores(updateJobDto);
 
-      // Update the job
       await this.jobRepository.update(id, updateJobDto);
 
-      // Return the updated job
       return this.jobRepository.findOne({
         where: { id },
         relations: ['location'],
@@ -828,13 +736,8 @@ export class JobsService {
     }
   }
 
-  /**
-   * Find all approved jobs that have passed their expiration date
-   * @returns List of expired jobs
-   */
   async findExpiredJobs(): Promise<Job[]> {
     try {
-      // Find all approved jobs where expiration date is set and has passed
       const currentDate = new Date();
 
       return this.jobRepository
@@ -855,12 +758,6 @@ export class JobsService {
     }
   }
 
-  /**
-   * Close a job with the given reason
-   * @param jobId - ID of the job to close
-   * @param reason - Reason for closing (manual or expired)
-   * @returns The updated job
-   */
   async closeJob(jobId: string, reason: 'manual' | 'expired'): Promise<Job> {
     try {
       const job = await this.findOne(jobId);
@@ -872,7 +769,6 @@ export class JobsService {
         );
       }
 
-      // Update job status and close reason
       job.status = JobStatus.CLOSED;
       job.closeReason = reason;
 

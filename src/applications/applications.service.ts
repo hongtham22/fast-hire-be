@@ -36,10 +36,6 @@ export class ApplicationsService {
     return this.applicationRepository.save(newApplication);
   }
 
-  /**
-   * Submit a new application for a job with applicant information
-   * This will find or create an applicant, then create an application
-   */
   async submitApplication(
     submitApplicationDto: SubmitApplicationDto,
     cvFile: Express.Multer.File,
@@ -205,27 +201,20 @@ export class ApplicationsService {
           }
 
           if (Object.keys(structuredData).length > 0) {
-            // Extract programming languages (limit to 6)
             const programmingLanguages =
               structuredData['programming_language']?.slice(0, 6) || [];
 
-            // Extract technical skills (limit to 9)
             const technicalSkills =
               structuredData['technical_skill']?.slice(0, 9) || [];
 
-            // Extract languages (limit to 3)
             const languages = structuredData['language']?.slice(0, 3) || [];
 
-            // Extract education information
             const education = structuredData['education'] || [];
 
-            // Extract experience information
             const experiences = structuredData['experience'] || [];
 
-            // Calculate total experience years (if available)
             let totalExperienceYears = 0;
 
-            // First check if experience_years is directly available in the candidate info
             if (
               structuredData['candidate'] &&
               structuredData['candidate'].experience_years !== undefined
@@ -249,7 +238,6 @@ export class ApplicationsService {
                 }
                 return total;
               }, 0);
-              // Round to 1 decimal place
               totalExperienceYears = Math.round(totalExperienceYears * 10) / 10;
             }
 
@@ -269,7 +257,6 @@ export class ApplicationsService {
         }
       }
 
-      // Return original application if no structured data available
       return {
         ...app,
         skills: [],
@@ -303,42 +290,21 @@ export class ApplicationsService {
     });
   }
 
-  /**
-   * Delete all applications and related data
-   *
-   * This method uses application entity's cascade delete settings to
-   * automatically delete related records (keywords and category relations)
-   *
-   * @param deleteApplicants If true, all applicants will also be deleted
-   */
   async deleteAll(deleteApplicants = false): Promise<void> {
-    // First, delete all mail logs that reference applications
     await this.emailService.deleteMailLogs();
 
-    // Delete all applications
-    // Due to cascade relationships set in the entities, this will also:
-    // - Delete all cv_keywords related to applications
-    // - Delete all cv_keyword_category records related to the cv_keywords
     await this.applicationRepository.delete({});
 
-    // Also delete all cv_categories
     await this.cvKeywordsService.deleteAllCategories();
 
-    // Optionally delete all applicants
     if (deleteApplicants) {
       await this.applicantsService.deleteAll();
     }
   }
 
-  /**
-   * Delete a specific application by ID
-   * @param id Application ID to delete
-   */
   async deleteApplication(id: string): Promise<void> {
-    // First delete any mail logs for this application
     await this.emailService.deleteMailLogs(id);
 
-    // Then delete the application
     await this.applicationRepository.delete(id);
   }
 
@@ -361,13 +327,7 @@ export class ApplicationsService {
     return this.applicationRepository.save(application);
   }
 
-  /**
-   * Get unique candidates from all jobs created by a specific HR user
-   * @param hrUserId HR user ID
-   * @returns Array of candidate information with application history
-   */
   async getCandidatesForHR(hrUserId: string): Promise<any[]> {
-    // Get applications for jobs created by this HR user
     const applications = await this.applicationRepository
       .createQueryBuilder('application')
       .leftJoinAndSelect('application.applicant', 'applicant')
@@ -487,7 +447,6 @@ export class ApplicationsService {
           ],
         });
       } else {
-        // Add this application to existing candidate
         const candidate = candidatesMap.get(applicantId);
         candidate.totalApplications++;
 
@@ -521,11 +480,6 @@ export class ApplicationsService {
     return Array.from(candidatesMap.values());
   }
 
-  /**
-   * Get unique candidates from all jobs (for admin) or from specific HR's jobs
-   * @param hrUserId Optional HR user ID to filter by specific HR, if not provided returns all candidates
-   * @returns Array of candidate information with application history
-   */
   async getAllCandidatesForAdmin(hrUserId?: string): Promise<any[]> {
     let queryBuilder = this.applicationRepository
       .createQueryBuilder('application')
@@ -535,7 +489,6 @@ export class ApplicationsService {
       .leftJoinAndSelect('cvKeyword.categories', 'categories')
       .leftJoinAndSelect('categories.category', 'category');
 
-    // If hrUserId is provided, filter by that HR's jobs
     if (hrUserId) {
       queryBuilder = queryBuilder.where('job.created_by = :hrUserId', {
         hrUserId,
@@ -546,14 +499,12 @@ export class ApplicationsService {
       .orderBy('application.submittedAt', 'DESC')
       .getMany();
 
-    // Group applications by applicant (same logic as getCandidatesForHR)
     const candidatesMap = new Map();
 
     applications.forEach((app) => {
       const applicantId = app.applicant.id;
 
       if (!candidatesMap.has(applicantId)) {
-        // Process structured data from CV keywords (same logic as getCandidatesForHR)
         let skills = [];
         let technical_skills = [];
         let languages = [];
@@ -688,10 +639,6 @@ export class ApplicationsService {
     return Array.from(candidatesMap.values());
   }
 
-  /**
-   * Sync emailSent flag for existing applications based on email history
-   * This method should be called once to fix existing data after implementing the auto-sync logic
-   */
   async syncEmailSentFlags(): Promise<{
     processed: number;
     updated: number;
@@ -706,13 +653,11 @@ export class ApplicationsService {
     };
 
     try {
-      // Get all applications grouped by applicant+job
       const applications = await this.applicationRepository.find({
         relations: ['applicant', 'job'],
         order: { submittedAt: 'ASC' },
       });
 
-      // Group applications by applicant+job combination
       const applicantJobGroups = new Map<string, typeof applications>();
 
       for (const app of applications) {
